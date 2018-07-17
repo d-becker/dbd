@@ -1,0 +1,51 @@
+version: "3"
+services:
+   oozieserver:
+      image: oozie:latest
+      command: ["/bin/bash", "scripts/setup-oozie.sh"]
+      tty: true
+      hostname: oozieserver
+      ports:
+        - 11000:11000
+        - 8089:8088
+      env_file:
+        - ./compose-config
+   namenode:
+      image: flokkr/hadoop:custom2
+      hostname: namenode
+      command: ["hdfs","namenode"]
+      ports:
+         - 50070:50070
+         - 9870:9870
+      env_file:
+        - ./compose-config
+      environment:
+          NAMENODE_INIT: "hdfs dfs -chmod 777 /"
+          ENSURE_NAMENODE_DIR: "/tmp/hadoop-hadoop/dfs/name"
+   datanode:
+      command: ["hdfs","datanode"]
+      image: flokkr/hadoop:custom2
+#      deploy:
+#        replicas: 3
+      env_file:
+        - ./compose-config
+   resourcemanager:
+      image: flokkr/hadoop:custom2
+      hostname: resourcemanager
+      command: ["yarn", "resourcemanager"]
+      ports:
+         - 8088:8088
+         - 8032:8032
+         - 8030:8030
+      env_file:
+        - ./compose-config
+   nodemanager:
+      image: flokkr/hadoop:custom2
+      command: ["yarn", "nodemanager"]
+      env_file:
+        - ./compose-config
+   historyserver:
+      image: flokkr/hadoop:custom2
+      command: ["mapred", "historyserver"]
+      env_file:
+        - ./compose-config
