@@ -10,13 +10,23 @@ function usage {
     echo -e "  -p\tUse a snapshot version. The second argument (PATH) is a path to a built snapshot distribution on the filesystem."
 }
 
+function create_tmp {
+    if [ ! -d "tmp" ]
+    then
+	mkdir tmp
+    else
+	rm -r tmp/*
+    fi
+}
+
 function get_tar_released_version {
     HADOOP_VERSION=$1
     TAG=$HADOOP_VERSION
     
-    echo "Downloading Hadoop release version $HADOOP_VERSION." >&2
-    
+    echo "Downloading Hadoop release version $HADOOP_VERSION."
+
     local URL=https://www-eu.apache.org/dist/hadoop/common/hadoop-$HADOOP_VERSION/hadoop-$HADOOP_VERSION.tar.gz
+    create_tmp
     wget ${URL} -O tmp/hadoop.tar.gz
 }
 
@@ -26,6 +36,7 @@ function get_tar_dist_path {
     HADOOP_VERSION="SNAPSHOT"
 
     echo "Preparing Hadoop snapshot version from path $hadoop_dist_path."
+    create_tmp
     tar -czf tmp/hadoop.tar.gz -C `dirname $hadoop_dist_path` `basename $hadoop_dist_path`
 }
 
@@ -63,6 +74,5 @@ function main {
     build || exit 1
     cleanup
 }
-
 
 main "$@"

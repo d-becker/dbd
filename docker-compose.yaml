@@ -1,7 +1,7 @@
 version: "3"
 services:
    oozieserver:
-      image: oozie:latest
+      image: dbd/oozie:${OOZIE_TAG}
       command: ["/bin/bash", "scripts/setup-oozie.sh"]
       tty: true
       hostname: oozieserver
@@ -11,7 +11,7 @@ services:
       env_file:
         - ./compose-config
    namenode:
-      image: flokkr/hadoop:custom2
+      image: dbd/hadoop:${HADOOP_TAG}
       hostname: namenode
       command: ["hdfs","namenode"]
       ports:
@@ -24,13 +24,13 @@ services:
           ENSURE_NAMENODE_DIR: "/tmp/hadoop-hadoop/dfs/name"
    datanode:
       command: ["hdfs","datanode"]
-      image: flokkr/hadoop:custom2
+      image: dbd/hadoop:${HADOOP_TAG}
 #      deploy:
 #        replicas: 3
       env_file:
         - ./compose-config
    resourcemanager:
-      image: flokkr/hadoop:custom2
+      image: dbd/hadoop:${HADOOP_TAG}
       hostname: resourcemanager
       command: ["yarn", "resourcemanager"]
       ports:
@@ -40,12 +40,12 @@ services:
       env_file:
         - ./compose-config
    nodemanager:
-      image: flokkr/hadoop:custom2
+      image: dbd/hadoop:${HADOOP_TAG}
       command: ["yarn", "nodemanager"]
       env_file:
         - ./compose-config
    historyserver:
-      image: flokkr/hadoop:custom2
+      image: dbd/hadoop:${HADOOP_TAG}
       command: ["mapred", "historyserver"]
       env_file:
         - ./compose-config
