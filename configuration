@@ -1,6 +1,7 @@
 name: example_configuration
 components:
   hadoop:
-    release: 2.6.5
+    release: 2.8.4
   oozie:
-    snapshot: ~/OOZIE/oozie/distro/target/oozie-4.3.0-distro/oozie-4.3.0
+#    snapshot: ~/OOZIE/oozie/distro/target/oozie-4.3.0-distro/oozie-4.3.0
+    release: 5.0.0

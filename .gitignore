@@ -1,4 +1,5 @@
 .DS_Store
+.mypy_cache
 *.retry
 group_vars
 *~
