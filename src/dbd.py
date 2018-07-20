@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import os, shutil, sys, time, __main__
+import os, re, shutil, sys, time, __main__
 
 from pathlib import Path
 from typing import Any, Dict, Tuple
@@ -39,6 +39,20 @@ def get_component_config(config: Dict[str, Any], component_key: str) -> Tuple[Di
                               if distType == DistType.RELEASE
                               else "snapshot"]
     return (distType, argument)
+
+def determine_hadoop_version(client: docker.DockerClient, image_name: str) -> str:
+    command = "hadoop version && exit 0" # Workaround: exit 0 is needed, otherwise the container exits with status 1 for some reason.
+    response_bytes = client.containers.run(image_name, command, auto_remove=True)
+    response = response_bytes.decode()
+
+    match = re.search("\nHadoop (.*)\n", response)
+
+    if match is None:
+        raise ValueError("No Hadoop version found.")
+
+    version = match.group(1)
+    return version
+    
     
 def main() -> None:
     filename = sys.argv[1]
@@ -51,13 +65,20 @@ def main() -> None:
         
     hadoop_resource_path = Path(__main__.__file__).parent.resolve().parent / "resources/hadoop"
     hadoop_image_builder = hadoop.ImageBuilder(client, REPOSITORY, timestamp, hadoop_resource_path)
-    hadoop_image_builder.ensure_image_exists(h_distType, h_argument)
+    hadoop_image_name = hadoop_image_builder.ensure_image_exists(h_distType, h_argument)
+
+    hadoop_tag = hadoop_image_name.split(":")[-1]
+    hadoop_version: str
+    if h_distType == DistType.RELEASE:
+        hadoop_version = h_argument
+    else:
+        hadoop_version = determine_hadoop_version(client, hadoop_image_name)
 
     (oo_distType, oo_argument) = get_component_config(conf, "oozie")
     
     oozie_resource_path = Path(__main__.__file__).parent.resolve().parent / "resources/oozie"
     oozie_image_builder = oozie.ImageBuilder(client, REPOSITORY, timestamp, oozie_resource_path)
-    oozie_image_builder.ensure_image_exists(oo_distType, oo_argument, h_argument, h_argument) # TODO: It is a hack, it should depend on the real Hadoop image tag and version.
+    oozie_image_builder.ensure_image_exists(oo_distType, oo_argument, hadoop_tag, hadoop_version)
 
 main()
         

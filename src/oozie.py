@@ -74,9 +74,10 @@ class ImageBuilder:
                                      oozie_version: str,
                                      hadoop_tag: str,
                                      hadoop_version: str):
-        print("Downloading Oozie release version {}.".format(oozie_version))
-                
-        url = "https://www-eu.apache.org/dist/oozie/{0}/oozie-{0}.tar.gz".format(oozie_version)
+        url = "https://archive.apache.org//dist/oozie/{0}/oozie-{0}.tar.gz".format(oozie_version)
+
+        print("Downloading Oozie release version {} from URL {}.".format(oozie_version, url))        
+
         tmp_path = self._get_tmp_dir_path()
         out_path = tmp_path / "oozie-src.tar.gz"
         wget.download(url, out=str(out_path))
@@ -106,12 +107,16 @@ class ImageBuilder:
 
         shutil.rmtree(oozie_dir)
 
-       
-
     def _prepare_build_snapshot_image(self,
                                       path: Path,
                                       hadoop_tag: str):
-        pass
+        print("Preparing Oozie snapshot version from path {}.".format(path))
+
+        tmp_path = self._get_tmp_dir_path()
+        oozie_tar_file_path = tmp_path / "oozie.tar.gz"
+
+        with tarfile.open(oozie_tar_file_path, "w:gz") as tar:
+            tar.add(str(path), arcname=path.name)
 
     def _build_with_docker(self, image_name: str, hadoop_tag: str) -> None:
         print("Building docker image {}.".format(image_name))

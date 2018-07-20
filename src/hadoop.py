@@ -25,7 +25,7 @@ class ImageBuilder:
     def ensure_image_exists(self,
                             distType: DistType,
                             argument: str,
-                            forceRebuild: bool = False):
+                            forceRebuild: bool = False) -> str:
         image_name = self._get_image_name(distType, argument)
 
         # TODO: possibly also check whether the image can be pulled.
@@ -40,6 +40,7 @@ class ImageBuilder:
                 self._build_image(distType, argument)
             finally:
                 self._cleanup_tmp_directory()
+        return image_name
 
     def _get_image_name(self,
                        distType: DistType,
