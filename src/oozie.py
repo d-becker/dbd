@@ -1,84 +1,99 @@
-import shutil, subprocess, tarfile
+import re, shutil, subprocess, tarfile
 
 from pathlib import Path
-from typing import Any, Dict, Tuple
+from typing import Dict, List, Tuple
 
 import docker, wget
 
-from utils import DistType
+from component_builder import ComponentConfig, Configuration, DistType
 import utils
 
 class ImageBuilder:
-    def __init__(self,
-                 client: docker.DockerClient,
-                 repository: str,
-                 timestamp: int,
-                 dockerfile_dir_path: Path) -> None:
-        self.client = client
-        self.repository = repository
-        self.timestamp = timestamp
-        self.dockerfile_dir_path = dockerfile_dir_path
+    def __init__(self) -> None:
+        self.docker_client = docker.from_env()
 
-        if not self.dockerfile_dir_path.is_dir():
-            raise ValueError("The provided Dockerfile directory path is not a directory.")
+    def name(self) -> str:
+        return "oozie"
 
-    def ensure_image_exists(self,
-                            distType: DistType,
-                            version_or_path: str,
-                            hadoop_tag: str,
-                            hadoop_version: str,
-                            forceRebuild: bool = False):
-        image_name = self._get_image_name(distType, version_or_path, hadoop_tag)
+    def dependencies(self) -> List[str]:
+        return ["hadoop"]
 
-        # TODO: possibly also check whether the image can be pulled.
-        if (distType == DistType.RELEASE
-            and not forceRebuild
-            and utils.image_exists_locally(self.client, image_name)):
-            print("Reusing local image {}.".format(image_name))
+    def build(self,
+              component_config: Dict[str, str],
+              built_config: Configuration,
+              force_rebuild: bool = False) -> ComponentConfig:
+        hadoop_config = built_config.components["hadoop"]
+        hadoop_tag = hadoop_config.image_name.split(":")[-1]
+
+        (dist_type, argument) = utils.dist_type_and_arg(component_config)
+        image_name = self._get_image_name(dist_type, argument, hadoop_tag, built_config)
+
+        reuse_existing_image = (not force_rebuild
+                                and dist_type == DistType.RELEASE
+                                and utils.image_exists_locally(self.docker_client, image_name))
+
+        if reuse_existing_image:
+            print("Reusing existing Hadoop image: {}.".format(image_name))
         else:
-            self._create_tmp_directory()
-            
-            try:
-                self._build_image(distType, version_or_path, hadoop_tag, hadoop_version)
-            finally:
-                self._cleanup_tmp_directory()
+            with utils.TmpDirHandler(self._get_resource_dir(built_config.resource_path)) as tmp_dir:
+                if dist_type == DistType.RELEASE:
+                    release_version = argument
+                    self._prepare_tarfile_release(release_version, hadoop_tag, hadoop_config.version, tmp_dir)
+                elif dist_type == DistType.SNAPSHOT:
+                    path = Path(argument)
+                    self._prepare_tarfile_snapshot(path, hadoop_tag, tmp_dir)
+                else:
+                    raise ValueError("Unexpected DistType value.")
+
+                self._build_docker_image(image_name, hadoop_tag, self._get_resource_dir(built_config.resource_path))
+
+        version: str
+        if dist_type == DistType.RELEASE:
+            version = argument
+        else:
+            version = self._find_out_version_from_image(image_name)
+
+        return ComponentConfig(dist_type, version, image_name)
         
         
+    def _find_out_version_from_image(self, image_name: str) -> str:
+        command = "bin/oozie version && exit 0" # Workaround: exit 0 is needed, otherwise the container exits with status 1 for some reason.
+        response_bytes = self.docker_client.containers.run(image_name, command, auto_remove=True)
+        response = response_bytes.decode()
+
+        match = re.search("version: (.*)\n", response)
+
+        if match is None:
+            raise ValueError("No Oozie version found.")
+
+        version = match.group(1)
+        return version
+
     def _get_image_name(self,
                         distType: DistType,
                         version_or_path: str,
-                        hadoop_tag: str):
+                        hadoop_tag: str,
+                        built_config: Configuration):
         oozie_part: str
         if distType == DistType.RELEASE:
             version = version_or_path
             oozie_part = version
         else:
-            oozie_part = "snapshot_{}".format(self.timestamp)
+            oozie_part = "snapshot_{}".format(built_config.timestamp)
 
-        return "{}/oozie:{}_H{}".format(self.repository, oozie_part, hadoop_tag)
-            
-    def _get_tmp_dir_path(self) -> Path:
-        return self.dockerfile_dir_path / "tmp"
-        
-    def _create_tmp_directory(self) -> None:
-       self._cleanup_tmp_directory()
-       self._get_tmp_dir_path().mkdir()
+        return "{}/oozie:{}_H{}".format(built_config.repository, oozie_part, hadoop_tag)
 
-    def _cleanup_tmp_directory(self) -> None:
-        tmp_path = self._get_tmp_dir_path()
 
-        if tmp_path.exists():
-                shutil.rmtree(tmp_path)
-
-    def _prepare_build_release_image(self,
-                                     oozie_version: str,
-                                     hadoop_tag: str,
-                                     hadoop_version: str):
+    def _prepare_tarfile_release(self,
+                                 oozie_version: str,
+                                 hadoop_tag: str,
+                                 hadoop_version: str,
+                                 tmp_path: Path):
         url = "https://archive.apache.org//dist/oozie/{0}/oozie-{0}.tar.gz".format(oozie_version)
 
         print("Downloading Oozie release version {} from URL {}.".format(oozie_version, url))        
 
-        tmp_path = self._get_tmp_dir_path()
+        tmp_path = tmp_path.expanduser()
         out_path = tmp_path / "oozie-src.tar.gz"
         wget.download(url, out=str(out_path))
 
@@ -98,7 +113,7 @@ class ImageBuilder:
         script_file = oozie_dir / "bin" / "mkdistro.sh"
         command = [str(script_file), "-Puber", "-Phadoop.version={}".format(hadoop_version), "-DskipTests"]
 
-        print("Building the Oozie distribution.")
+        print("Building the Oozie distribution against Hadoop version {}.".format(hadoop_version))
         subprocess.run(command, check=True)
         distro_file_path = oozie_dir / "distro/target/oozie-{}-distro.tar.gz".format(oozie_version)
         new_oozie_distro_path = tmp_path / "oozie.tar.gz"
@@ -107,37 +122,28 @@ class ImageBuilder:
 
         shutil.rmtree(oozie_dir)
 
-    def _prepare_build_snapshot_image(self,
-                                      path: Path,
-                                      hadoop_tag: str):
+    def _prepare_tarfile_snapshot(self,
+                                  path: Path,
+                                  hadoop_tag: str,
+                                  tmp_path: Path):
         print("Preparing Oozie snapshot version from path {}.".format(path))
 
-        tmp_path = self._get_tmp_dir_path()
+        path = path.expanduser()
+        tmp_path = tmp_path.expanduser()
         oozie_tar_file_path = tmp_path / "oozie.tar.gz"
 
         with tarfile.open(oozie_tar_file_path, "w:gz") as tar:
             tar.add(str(path), arcname=path.name)
 
-    def _build_with_docker(self, image_name: str, hadoop_tag: str) -> None:
+    def _build_docker_image(self,
+                            image_name: str,
+                            hadoop_tag: str,
+                            dockerfile_path: Path) -> None:
         print("Building docker image {}.".format(image_name))
-        self.client.images.build(path=str(self.dockerfile_dir_path),
+        self.docker_client.images.build(path=str(dockerfile_path),
                                  tag=image_name,
                                  buildargs={"HADOOP_TAG": hadoop_tag},
                                  rm=True)
 
-    def _build_image(self,
-                     distType: DistType,
-                     version_or_path: str,
-                     hadoop_tag: str,
-                     hadoop_version: str):
-        if distType == DistType.RELEASE:
-            version = version_or_path
-            print("Preparing to build Oozie release version {} docker image.".format(version))
-            self._prepare_build_release_image(version, hadoop_tag, hadoop_version)
-        else:
-            path = Path(version_or_path).expanduser().resolve()
-            print("Preparing to build Oozie snapshot version docker image from path {}.".format(path))
-            self._prepare_build_snapshot_image(path, hadoop_tag)
-
-        image_name = self._get_image_name(distType, version_or_path, hadoop_tag)
-        self._build_with_docker(image_name, hadoop_tag)
+    def _get_resource_dir(self, global_resource_path: Path) -> Path:
+        return global_resource_path / self.name()
