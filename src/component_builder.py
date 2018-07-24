@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 from abc import ABCMeta, abstractmethod
 from enum import Enum, auto, unique
 from pathlib import Path
@@ -68,17 +70,6 @@ class Configuration:
     @property
     def resource_path(self) -> Path:
         return self._resource_path
-
-    def as_dict(self) -> Dict[str, Any]:
-        d = {}
-        d["name"] = self.name
-        d["timestamp"] = self.timestamp
-        d["repository"] = self.repository
-        # Omitting the resource path
-        # d["resource_path"] = self.resource_path
-        d["components"] = {component_name : config.as_dict() for component_name, config in self.components.items()}
-
-        return d
 
 class ComponentImageBuilder(metaclass=ABCMeta):
     @abstractmethod

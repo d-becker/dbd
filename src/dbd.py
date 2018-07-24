@@ -7,7 +7,7 @@ from typing import Any, Dict, List
 
 import docker, yaml
 
-import hadoop, oozie, graph
+import graph, output
 from component_builder import ComponentImageBuilder, Configuration, DistType
 
 def parse_yaml(filename: str) -> Dict[str, Any]:
@@ -51,23 +51,6 @@ def build_component_images(name: str,
 
     return resulting_configuration
 
-def generate_output(configuration: Configuration, output_location: Path) -> None:
-    # This is just a rudimentary implementation, for example, the order of the name and components attributes should be deterministic.
-    if not output_location.is_dir():
-        raise ValueError("The provided output location is not a directory.")
-
-    out = output_location / configuration.name
-    out.mkdir()
-
-    components_as_dict = {component_name : config.as_dict()
-                          for component_name, config
-                          in configuration.components.items()}
-    conf_as_dict = {"components" : components_as_dict, "name" : configuration.name}
-    text = yaml.dump(conf_as_dict, default_style="flow")
-
-    with (out / "output_configuration.yaml").open("w") as file:
-        file.write(text)
-
 def main() -> None:
     filename = sys.argv[1]
     
@@ -94,7 +77,7 @@ def main() -> None:
     else:
         output_dir = Path(".")
 
-    generate_output(output_configuration, output_dir)
+    output.generate_output(output_configuration, output_dir)
 
 if __name__ == "__main__":
     main()
