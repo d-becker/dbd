@@ -30,18 +30,32 @@ class ComponentConfig:
     @property
     def image_name(self) -> str:
         return self._image_name
+
+    def as_dict(self) -> Dict[str, str]:
+        d = {}
+        d["dist_type"] = "release" if self.dist_type == DistType.RELEASE else "snapshot"
+        d["version"] = self.version
+        d["image_name"] = self.image_name
+
+        return d
     
 class Configuration:
     def __init__(self,
+                 name: str,
                  timestamp: str,
                  repository: str = None,
                  resource_path: Path = None) -> None:
+        self._name = name
         self._timestamp = timestamp
         self._repository: str = "dbd" if repository is None else repository
 
         default_path = Path(__main__.__file__).parent.resolve().parent / "resources"
         self._resource_path: Path = default_path  if resource_path is None else resource_path
         self.components : Dict[str, ComponentConfig] = {}
+
+    @property
+    def name(self) -> str:
+        return self._name
 
     @property
     def timestamp(self) -> str:
@@ -55,7 +69,18 @@ class Configuration:
     def resource_path(self) -> Path:
         return self._resource_path
 
-class ComponentBuilder(metaclass=ABCMeta):
+    def as_dict(self) -> Dict[str, Any]:
+        d = {}
+        d["name"] = self.name
+        d["timestamp"] = self.timestamp
+        d["repository"] = self.repository
+        # Omitting the resource path
+        # d["resource_path"] = self.resource_path
+        d["components"] = {component_name : config.as_dict() for component_name, config in self.components.items()}
+
+        return d
+
+class ComponentImageBuilder(metaclass=ABCMeta):
     @abstractmethod
     def name(self) -> str: pass
 

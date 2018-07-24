@@ -5,10 +5,10 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import docker, wget
 
-from component_builder import DistType, ComponentBuilder, ComponentConfig, Configuration
+from component_builder import DistType, ComponentConfig, ComponentImageBuilder, Configuration
 import utils
 
-class ImageBuilder(ComponentBuilder):
+class ImageBuilder(ComponentImageBuilder):
     def __init__(self) -> None:
         self.docker_client: docker.DockerClient = docker.from_env()
 

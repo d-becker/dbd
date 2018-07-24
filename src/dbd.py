@@ -8,7 +8,7 @@ from typing import Any, Dict, List
 import docker, yaml
 
 import hadoop, oozie, graph
-from component_builder import Configuration, DistType
+from component_builder import ComponentImageBuilder, Configuration, DistType
 
 def parse_yaml(filename: str) -> Dict[str, Any]:
     with open(filename) as file:
@@ -17,36 +17,85 @@ def parse_yaml(filename: str) -> Dict[str, Any]:
 
 def get_components(conf: Dict[str, Any]) -> List[str]:
     return list(conf["components"].keys())
+
+def get_component_image_builders(components: List[str]) -> Dict[str, ComponentImageBuilder]:
+    modules = map(importlib.import_module, components)
+    image_builders = map(lambda module: module.__dict__["ImageBuilder"](), modules)
+
+    return dict(zip(components, image_builders))
+
+def get_component_dependencies(image_builders: Dict[str, ComponentImageBuilder]) -> Dict[str, List[str]]:
+    items = [(component_name, image_builders[component_name].dependencies()) for component_name in image_builders.keys()]
+    return dict(items)
     
+def get_initial_configuration(name: str) -> Configuration:
+    timestamp: str = str(int(time.time()))
+    repository: str = "dbd"
+    resource_path: Path = Path(__main__.__file__).parent.resolve().parent / "resources"
+
+    return Configuration(name, timestamp, repository, resource_path)
+
+def build_component_images(name: str,
+                           components: List[str],
+                           input_configuration: Dict[str, Dict[str, str]],
+                           image_builders: Dict[str, ComponentImageBuilder]) -> Configuration:
+    resulting_configuration = get_initial_configuration(name)
+
+    print("Building components in the following order: {}.".format(components))
+
+    for component in components:
+        component_conf = input_configuration[component]
+        image_builder = image_builders[component]
+        component_config = image_builder.build(component_conf, resulting_configuration)
+        resulting_configuration.components[component] = component_config
+
+    return resulting_configuration
+
+def generate_output(configuration: Configuration, output_location: Path) -> None:
+    # This is just a rudimentary implementation, for example, the order of the name and components attributes should be deterministic.
+    if not output_location.is_dir():
+        raise ValueError("The provided output location is not a directory.")
+
+    out = output_location / configuration.name
+    out.mkdir()
+
+    components_as_dict = {component_name : config.as_dict()
+                          for component_name, config
+                          in configuration.components.items()}
+    conf_as_dict = {"components" : components_as_dict, "name" : configuration.name}
+    text = yaml.dump(conf_as_dict, default_style="flow")
+
+    with (out / "output_configuration.yaml").open("w") as file:
+        file.write(text)
+
 def main() -> None:
     filename = sys.argv[1]
-    conf = parse_yaml(filename)
+    
+    input_conf = parse_yaml(filename)
 
-    timestamp: str = str(int(time.time()))
-    repository = "dbd"
-    resource_path = Path(__main__.__file__).parent.resolve().parent / "resources"
+    name = input_conf["name"]
+    components = get_components(input_conf)
 
-    configuration = Configuration(timestamp, repository, resource_path)
+    image_builders = get_component_image_builders(components)
 
-    print("Components: {}.".format(get_components(conf)))
-
-    components = get_components(conf)
-
-    component_modules = [(name, importlib.import_module(name)) for name in components]
-
-    image_builders = dict([(name, module.__dict__["ImageBuilder"]()) for (name, module) in component_modules])
-
-    dependencies = dict([(name, image_builders[name].dependencies()) for name in components])
-    print(dependencies)
+    dependencies = get_component_dependencies(image_builders)
 
     dag = graph.build_graph_from_dependencies(dependencies)
     topologically_sorted_components = dag.get_topologically_sorted_nodes()
 
-    for component in topologically_sorted_components:
-        component_conf = conf["components"][component]
-        image_builder = image_builders[component]
-        component_config = image_builder.build(component_conf, configuration)
-        configuration.components[component] = component_config
+    output_configuration = build_component_images(name,
+                                                  topologically_sorted_components,
+                                                  input_conf["components"],
+                                                  image_builders)
 
-main()
+    output_dir: Path
+    if len(sys.argv) > 2:
+        output_dir = Path(sys.argv[2])
+    else:
+        output_dir = Path(".")
+
+    generate_output(output_configuration, output_dir)
+
+if __name__ == "__main__":
+    main()
         
