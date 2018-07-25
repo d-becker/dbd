@@ -1,5 +1,5 @@
-ARG HADOOP_TAG
-FROM dbd/hadoop:${HADOOP_TAG}
+ARG HADOOP_IMAGE
+FROM ${HADOOP_IMAGE}
 USER root
 RUN apk add --update --no-cache python zip
 WORKDIR /opt

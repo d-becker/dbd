@@ -23,7 +23,8 @@ class ImageBuilder(ComponentImageBuilder):
               built_config: Configuration,
               force_rebuild: bool = False) -> ComponentConfig:
         hadoop_config = built_config.components["hadoop"]
-        hadoop_tag = hadoop_config.image_name.split(":")[-1]
+        hadoop_image_name = hadoop_config.image_name
+        hadoop_tag = hadoop_image_name.split(":")[-1]
 
         (dist_type, argument) = utils.dist_type_and_arg(component_config)
         image_name = self._get_image_name(dist_type, argument, hadoop_tag, built_config)
@@ -33,19 +34,19 @@ class ImageBuilder(ComponentImageBuilder):
                                 and utils.image_exists_locally(self.docker_client, image_name))
 
         if reuse_existing_image:
-            print("Reusing existing Hadoop image: {}.".format(image_name))
+            print("Reusing existing Oozie image: {}.".format(image_name))
         else:
             with utils.TmpDirHandler(self._get_resource_dir(built_config.resource_path)) as tmp_dir:
                 if dist_type == DistType.RELEASE:
                     release_version = argument
-                    self._prepare_tarfile_release(release_version, hadoop_tag, hadoop_config.version, tmp_dir)
+                    self._prepare_tarfile_release(release_version, hadoop_config.version, tmp_dir)
                 elif dist_type == DistType.SNAPSHOT:
                     path = Path(argument)
-                    self._prepare_tarfile_snapshot(path, hadoop_tag, tmp_dir)
+                    self._prepare_tarfile_snapshot(path, tmp_dir)
                 else:
                     raise ValueError("Unexpected DistType value.")
 
-                self._build_docker_image(image_name, hadoop_tag, self._get_resource_dir(built_config.resource_path))
+                self._build_docker_image(image_name, hadoop_image_name, self._get_resource_dir(built_config.resource_path))
 
         version: str
         if dist_type == DistType.RELEASE:
@@ -86,7 +87,7 @@ class ImageBuilder(ComponentImageBuilder):
 
     def _prepare_tarfile_release(self,
                                  oozie_version: str,
-                                 hadoop_tag: str,
+                                 # hadoop_tag: str,
                                  hadoop_version: str,
                                  tmp_path: Path):
         url = "https://archive.apache.org//dist/oozie/{0}/oozie-{0}.tar.gz".format(oozie_version)
@@ -129,7 +130,6 @@ class ImageBuilder(ComponentImageBuilder):
 
     def _prepare_tarfile_snapshot(self,
                                   path: Path,
-                                  hadoop_tag: str,
                                   tmp_path: Path):
         print("Preparing Oozie snapshot version from path {}.".format(path))
 
@@ -142,12 +142,12 @@ class ImageBuilder(ComponentImageBuilder):
 
     def _build_docker_image(self,
                             image_name: str,
-                            hadoop_tag: str,
+                            hadoop_image_name: str,
                             dockerfile_path: Path) -> None:
         print("Building docker image {}.".format(image_name))
         self.docker_client.images.build(path=str(dockerfile_path),
                                  tag=image_name,
-                                 buildargs={"HADOOP_TAG": hadoop_tag},
+                                 buildargs={"HADOOP_IMAGE": hadoop_image_name},
                                  rm=True)
 
     def _get_resource_dir(self, global_resource_path: Path) -> Path:

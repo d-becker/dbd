@@ -20,8 +20,8 @@ def generate_output(configuration: Configuration, output_location: Path) -> None
 
     docker_dependency_dir = configuration.resource_path / "docker"
     docker_dependency_files = docker_dependency_dir.glob("*")
-    for file in docker_dependency_files:
-        shutil.copy(str(file), str(out))
+    for dependency_file in docker_dependency_files:
+        shutil.copy(str(dependency_file), str(out))
 
 def generate_config_report(configuration: Configuration) -> str:
     text = io.StringIO()
