@@ -1,7 +1,7 @@
 ARG HADOOP_TAG
 FROM dbd/hadoop:${HADOOP_TAG}
 USER root
-RUN apk add --update --no-cache python
+RUN apk add --update --no-cache python zip
 WORKDIR /opt
 COPY tmp/oozie.tar.gz /opt
 RUN tar zxf oozie.tar.gz && rm oozie.tar.gz && mv oozie* oozie

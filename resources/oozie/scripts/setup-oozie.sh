@@ -30,6 +30,11 @@ echo "Examples uploaded to hdfs." >> docker_oozie_logs.txt
 
 /opt/oozie/bin/oozied.sh start
 
-echo "Started the Oozie server." >> docker_oozie_logs.txt 
+if [ $? -eq 0 ]
+then
+    echo "Started the Oozie server." >> docker_oozie_logs.txt 
+else
+    echo "Could not start the Oozie server." >> docker_oozie_logs.txt
+fi
 
 /bin/bash

@@ -111,9 +111,14 @@ class ImageBuilder(ComponentImageBuilder):
 
         oozie_dir = oozie_dirs[0]
         script_file = oozie_dir / "bin" / "mkdistro.sh"
-        command = [str(script_file), "-Puber", "-Phadoop.version={}".format(hadoop_version), "-DskipTests"]
+        command = [str(script_file),
+                   "-Puber", "-Dhadoop.version={}".format(hadoop_version),
+                   "-DskipTests",
+                   "-Phadoop-{}".format(hadoop_version.split(".")[0])]
 
         print("Building the Oozie distribution against Hadoop version {}.".format(hadoop_version))
+        print("Build command: {}.".format(" ".join(command)))
+        
         subprocess.run(command, check=True)
         distro_file_path = oozie_dir / "distro/target/oozie-{}-distro.tar.gz".format(oozie_version)
         new_oozie_distro_path = tmp_path / "oozie.tar.gz"
