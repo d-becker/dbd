@@ -60,7 +60,7 @@ def main() -> None:
     parser.add_argument("output_dir", default=".",
                         help="the directory in which the output directory will be created; " +
                         "this directory must already exist")
-    parser.add_argument("-f", "--force", metavar="COMPONENT", nargs="*", default=[],
+    parser.add_argument("-f", "--force", metavar="COMPONENT", nargs="*",
                         help="force rebuilding the images of the given COMPONENTs even if suitable " +
                         "images already exist; if specified without arguments, all images are rebuilt")
 
@@ -70,7 +70,15 @@ def main() -> None:
 
     name = input_conf["name"]
     components = get_components(input_conf)
-    force_rebuild_components = args.force if len(args.force) > 0 else components
+    
+    force_rebuild_components: List[str]
+
+    if args.force is not None and len(args.force) == 0:
+        force_rebuild_components = components
+    elif args.force is None:
+        force_rebuild_components = []
+    else:
+        force_rebuild_components = args.force
 
     image_builders = get_component_image_builders(components)
 
