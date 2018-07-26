@@ -113,9 +113,14 @@ class ImageBuilder(ComponentImageBuilder):
         oozie_dir = oozie_dirs[0]
         script_file = oozie_dir / "bin" / "mkdistro.sh"
         command = [str(script_file),
-                   "-Puber", "-Dhadoop.version={}".format(hadoop_version),
-                   "-DskipTests",
-                   "-Phadoop-{}".format(hadoop_version.split(".")[0])]
+                   "-Puber",
+                   # "-Dhadoop.version={}".format(hadoop_version),
+                   "-DskipTests"]
+
+        # if oozie_version.split(".")[0] == "4":
+        #     command.append("-Phadoop-{}".format(hadoop_version.split(".")[0]))
+
+        ### TODO: Oozie cannot be built when specifying a Hadoop-3 version. ###
 
         print("Building the Oozie distribution against Hadoop version {}.".format(hadoop_version))
         print("Build command: {}.".format(" ".join(command)))
