@@ -1,0 +1,6 @@
+<configuration>
+    <property>
+        <name>oozie.base.url</name>
+        <value>http://oozieserver:11000/oozie</value>
+    </property>
+</configuration>

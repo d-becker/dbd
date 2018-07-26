@@ -12,4 +12,7 @@ RUN adduser -h /opt/oozie -s /bin/bash -G flokkr -D oozie \
 USER oozie
 WORKDIR /opt/oozie
 COPY scripts ./scripts
-ENV OOZIE_URL http://localhost:11000/oozie
+COPY oozie-site_additional.xml .
+RUN python scripts/xmlcombine.py /opt/oozie/conf/oozie-site.xml ./oozie-site_additional.xml > tmp.xml \
+    && mv tmp.xml /opt/oozie/conf/oozie-site.xml
+ENV OOZIE_URL http://oozieserver:11000/oozie
