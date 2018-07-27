@@ -1,0 +1,3 @@
+CORE-SITE.XML_hadoop.proxyuser.oozie.hosts=*
+CORE-SITE.XML_hadoop.proxyuser.oozie.groups=*
+CORE-SITE.XML_hadoop.user.group.static.mapping.overrides=oozie=supergroup

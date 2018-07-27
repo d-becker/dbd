@@ -23,19 +23,36 @@ def extend_docker_compose_dict(original: Dict[str, Dict[str, Any]], other: Dict[
 
         original_inner_dict.update(other_inner_dict)
 
-def generate_docker_compose_file_text(sorted_components: List[str], configuration: Configuration) -> str:
+def generate_docker_compose_file_text(sorted_components: List[str], resource_path: Path) -> str:
     document_body: Dict[str, Dict[str, Any]] = dict()
     
     for component in sorted_components:
-        file_path = configuration.resource_path / component / "docker-compose_part.yaml"
-        file_text: str
-        with file_path.open() as file:
-            component_docker_compose_dict = yaml.load(file)
-            extend_docker_compose_dict(document_body, component_docker_compose_dict)
+        file_path = resource_path / component / "docker-compose_part.yaml"
 
-    document = {"version": "3"}
+        if file_path.exists():
+            with file_path.open() as file:
+                component_docker_compose_dict = yaml.load(file)
+                extend_docker_compose_dict(document_body, component_docker_compose_dict)
+
+    document: Dict[str, Any] = {"version": "3"}
     document.update(document_body)
     return yaml.dump(document, default_style=None)
+
+def generate_compose_config_file_text(sorted_components: List[str], resource_path: Path) -> str:
+    text = io.StringIO()
+    for component in sorted_components:
+        file_path = resource_path / component / "compose-config_part"
+
+        if file_path.exists():
+            with file_path.open() as file:
+                contents = file.read()
+
+                comment = "# {}\n".format(component)
+
+                text.write(comment)
+                text.write(contents + "\n\n")
+
+    return text.getvalue()
 
 def generate_output(sorted_components: List[str], configuration: Configuration, output_location: Path) -> None:
     if not output_location.is_dir():
@@ -52,15 +69,13 @@ def generate_output(sorted_components: List[str], configuration: Configuration, 
         env_file_text = generate_env_file_text(configuration)
         file.write(env_file_text)
 
-    # TODO: to be deleted.
-    docker_dependency_dir = configuration.resource_path / "docker"
-    docker_dependency_files = docker_dependency_dir.glob("*")
-    for dependency_file in docker_dependency_files:
-        shutil.copy(str(dependency_file), str(out))
-
-    docker_compose_file_text = generate_docker_compose_file_text(sorted_components, configuration)
+    docker_compose_file_text = generate_docker_compose_file_text(sorted_components, configuration.resource_path)
     with (out / "docker-compose.yaml").open("w") as docker_compose_file:
         docker_compose_file.write(docker_compose_file_text)
+
+    compose_config_file_text = generate_compose_config_file_text(sorted_components, configuration.resource_path)
+    with (out / "compose-config").open("w") as compose_config_file:
+        compose_config_file.write(compose_config_file_text)
 
 def generate_config_report(configuration: Configuration) -> str:
     text = io.StringIO()
