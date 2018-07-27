@@ -93,7 +93,7 @@ def main() -> None:
                                                   image_builders,
                                                   force_rebuild_components)
 
-    output.generate_output(output_configuration, Path(args.output_dir))
+    output.generate_output(topologically_sorted_components, output_configuration, Path(args.output_dir))
 
 if __name__ == "__main__":
     main()

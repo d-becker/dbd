@@ -1,0 +1,33 @@
+services:
+   namenode:
+      image: ${HADOOP_IMAGE}
+      hostname: namenode
+      command: ["hdfs","namenode"]
+      ports:
+         - 50070:50070
+         - 9870:9870
+      env_file:
+        - ./compose-config
+      environment:
+          NAMENODE_INIT: "hdfs dfs -chmod 777 /"
+          ENSURE_NAMENODE_DIR: "/tmp/hadoop-hadoop/dfs/name"
+   datanode:
+      command: ["hdfs","datanode"]
+      image: ${HADOOP_IMAGE}
+      env_file:
+        - ./compose-config
+   resourcemanager:
+      image: ${HADOOP_IMAGE}
+      hostname: resourcemanager
+      command: ["yarn", "resourcemanager"]
+      ports:
+         - 8088:8088
+         - 8032:8032
+         - 8030:8030
+      env_file:
+        - ./compose-config
+   nodemanager:
+      image: ${HADOOP_IMAGE}
+      command: ["yarn", "nodemanager"]
+      env_file:
+        - ./compose-config

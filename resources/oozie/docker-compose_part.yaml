@@ -1,0 +1,16 @@
+services:
+   oozieserver:
+      image: ${OOZIE_IMAGE}
+      command: ["/bin/bash", "scripts/setup-oozie.sh"]
+      tty: true
+      hostname: oozieserver
+      ports:
+        - 11000:11000
+        - 8089:8088
+      env_file:
+        - ./compose-config
+   historyserver:
+      image: ${HADOOP_IMAGE}
+      command: ["mapred", "historyserver"]
+      env_file:
+        - ./compose-config
