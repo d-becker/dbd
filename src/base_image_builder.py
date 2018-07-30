@@ -15,7 +15,7 @@ class BaseImageBuilder(ComponentImageBuilder):
                  component_name: str,
                  dependencies: List[str],
                  url_template: str,
-                 version_from_image_name: Callable[[str], str]) -> None:
+                 version_from_image_name: Callable[[docker.DockerClient, str], str]) -> None:
         self._name = component_name
         self._dependencies = dependencies
         self._url_template = url_template # A string with {0} which will be formatted with the version.
@@ -47,24 +47,24 @@ class BaseImageBuilder(ComponentImageBuilder):
             with utils.TmpDirHandler(self._get_resource_dir(built_config.resource_path)) as tmp_dir:
                 if dist_type == DistType.RELEASE:
                     release_version = argument
-                    self._prepare_tarfile_release(release_version, tmp_dir)
+                    self._prepare_tarfile_release(release_version, tmp_dir, built_config)
                 elif dist_type == DistType.SNAPSHOT:
                     path = Path(argument)
-                    self._prepare_tarfile_snapshot(path, tmp_dir)
+                    self._prepare_tarfile_snapshot(path, tmp_dir, built_config)
                 else:
                     raise ValueError("Unexpected DistType value.")
 
-                self._build_docker_image(image_name, self._get_resource_dir(built_config.resource_path))
+                self._build_docker_image(image_name, built_config)
 
         version: str
         if dist_type == DistType.RELEASE:
             version = argument
         else:
-            version = self._version_from_image_name(image_name)
+            version = self._version_from_image_name(self._docker_client, image_name)
 
         return ComponentConfig(dist_type, version, image_name)
 
-    def _prepare_tarfile_release(self, version: str, tmp_dir: Path):
+    def _prepare_tarfile_release(self, version: str, tmp_dir: Path, built_config: Configuration):
         url=self._url_template.format(version)
         print("Downloading {} release version {} from {}.".format(self.name(), version, url))
 
@@ -75,21 +75,33 @@ class BaseImageBuilder(ComponentImageBuilder):
 
     def _prepare_tarfile_snapshot(self,
                                   path: Path,
-                                  tmp_dir: Path):
+                                  tmp_dir: Path,
+                                  built_config: Configuration):
         print("Preparing {} snapshot version from path {}.".format(self.name(), path))
 
         with tarfile.open(tmp_dir / "{}.tar.gz".format(self.name()), "w:gz") as tar:
             tar.add(str(path.expanduser()), arcname=path.name)
 
-    def _build_docker_image(self, image_name: str, dockerfile_path: Path) -> None:
+    def _build_docker_image(self,
+                            image_name: str,
+                            built_config: Configuration) -> None:
         print("Building docker image {}.".format(image_name))
-        self._docker_client.images.build(path=str(dockerfile_path), tag=image_name, rm=True)
+
+        # Providing the dependencies as arguments
+        buildargs: Dict[str, str] = dict()
+
+        for dependency in self.dependencies():
+            dependency_image_name = built_config.components[dependency].image_name
+            buildargs["{}_IMAGE".format(dependency.upper())] = dependency_image_name
+
+        dockerfile_path = self._get_resource_dir(built_config.resource_path)
+        self._docker_client.images.build(path=str(dockerfile_path), buildargs=buildargs, tag=image_name, rm=True)
 
     def _get_image_name(self,
                         dist_type: DistType,
                         version: Optional[str],
                         built_config: Configuration) -> str:
-        template = "{repository}/{component}:{component_tag}_{dependencies_tag}"
+        template = "{repository}/{component}:{component_tag}{dependencies_tag}"
 
         component_tag: str
         if dist_type == DistType.RELEASE:
@@ -105,7 +117,7 @@ class BaseImageBuilder(ComponentImageBuilder):
         dependencies = self.dependencies()
         dependencies.sort()
 
-        deps_join_list: List[str] = []
+        deps_join_list: List[str] = [""]
         for dependency in dependencies:
             dependency_tag = built_config.components[dependency].image_name.split(":")[-1]
             deps_join_list.append(dependency + dependency_tag)
