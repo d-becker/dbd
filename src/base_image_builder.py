@@ -3,22 +3,30 @@
 import re, shutil, tarfile
 
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 import docker, wget
 
 from component_builder import DistType, ComponentConfig, ComponentImageBuilder, Configuration
 import utils
 
-class ImageBuilder(ComponentImageBuilder):
-    def __init__(self) -> None:
-        self.docker_client: docker.DockerClient = docker.from_env()
+class BaseImageBuilder(ComponentImageBuilder):
+    def __init__(self,
+                 component_name: str,
+                 dependencies: List[str],
+                 url_template: str,
+                 version_from_image_name: Callable[[str], str]) -> None:
+        self._name = component_name
+        self._dependencies = dependencies
+        self._url_template = url_template # A string with {0} which will be formatted with the version.
+        self._docker_client = docker.from_env()
+        self._version_from_image_name = version_from_image_name
 
     def name(self) -> str:
-        return "hadoop"
+        return self._name
     
     def dependencies(self) -> List[str]:
-        return []
+        return self._dependencies
 
     def build(self,
               component_config: Dict[str, str],
@@ -31,10 +39,10 @@ class ImageBuilder(ComponentImageBuilder):
 
         reuse_existing_image = (not force_rebuild
                                 and dist_type == DistType.RELEASE
-                                and utils.image_exists_locally(self.docker_client, image_name))
+                                and utils.image_exists_locally(self._docker_client, image_name))
 
         if reuse_existing_image:
-            print("Reusing existing Hadoop image: {}.".format(image_name))
+            print("Reusing existing {} image: {}.".format(self.name(), image_name))
         else:
             with utils.TmpDirHandler(self._get_resource_dir(built_config.resource_path)) as tmp_dir:
                 if dist_type == DistType.RELEASE:
@@ -52,28 +60,15 @@ class ImageBuilder(ComponentImageBuilder):
         if dist_type == DistType.RELEASE:
             version = argument
         else:
-            version = self._find_out_version_from_image(image_name)
+            version = self._version_from_image_name(image_name)
 
         return ComponentConfig(dist_type, version, image_name)
 
-    def _find_out_version_from_image(self, image_name: str) -> str:
-        command = "hadoop version && exit 0" # Workaround: exit 0 is needed, otherwise the container exits with status 1 for some reason.
-        response_bytes = self.docker_client.containers.run(image_name, command, auto_remove=True)
-        response = response_bytes.decode()
-
-        match = re.search("\nHadoop (.*)\n", response)
-
-        if match is None:
-            raise ValueError("No Hadoop version found.")
-
-        version = match.group(1)
-        return version
-
     def _prepare_tarfile_release(self, version: str, tmp_dir: Path):
-        url="https://www-eu.apache.org/dist/hadoop/common/hadoop-{0}/hadoop-{0}.tar.gz".format(version)
-        print("Downloading Hadoop release version {} from {}.".format(version, url))
+        url=self._url_template.format(version)
+        print("Downloading {} release version {} from {}.".format(self.name(), version, url))
 
-        out_path = tmp_dir / "hadoop.tar.gz"
+        out_path = tmp_dir / "{}.tar.gz".format(self.name())
         wget.download(url, out=str(out_path.expanduser()))
 
         print()
@@ -81,27 +76,46 @@ class ImageBuilder(ComponentImageBuilder):
     def _prepare_tarfile_snapshot(self,
                                   path: Path,
                                   tmp_dir: Path):
-        print("Preparing Hadoop snapshot version from path {}.".format(path))
+        print("Preparing {} snapshot version from path {}.".format(self.name(), path))
 
-        with tarfile.open(tmp_dir / "hadoop.tar.gz", "w:gz") as tar:
+        with tarfile.open(tmp_dir / "{}.tar.gz".format(self.name()), "w:gz") as tar:
             tar.add(str(path.expanduser()), arcname=path.name)
 
     def _build_docker_image(self, image_name: str, dockerfile_path: Path) -> None:
         print("Building docker image {}.".format(image_name))
-        self.docker_client.images.build(path=str(dockerfile_path), tag=image_name, rm=True)
+        self._docker_client.images.build(path=str(dockerfile_path), tag=image_name, rm=True)
 
     def _get_image_name(self,
                         dist_type: DistType,
                         version: Optional[str],
                         built_config: Configuration) -> str:
+        template = "{repository}/{component}:{component_tag}_{dependencies_tag}"
+
+        component_tag: str
         if dist_type == DistType.RELEASE:
             if version is None:
                 raise ValueError("The version is None but release mode is specified.")
-            return "{}/hadoop:{}".format(built_config.repository, version)
+            component_tag = version
         elif dist_type == DistType.SNAPSHOT:
-            return "{}/hadoop:snapshot_{}".format(built_config.repository, built_config.timestamp)
+            component_tag = "snapshot_{}".format(built_config.timestamp)
         else:
             raise RuntimeError("Unexpected value of DistType.")
+
+        dependencies_tag: str
+        dependencies = self.dependencies()
+        dependencies.sort()
+
+        deps_join_list: List[str] = []
+        for dependency in dependencies:
+            dependency_tag = built_config.components[dependency].image_name.split(":")[-1]
+            deps_join_list.append(dependency + dependency_tag)
+
+        dependencies_tag = "_".join(deps_join_list)
+
+        return template.format(repository=built_config.repository,
+                               component=self.name(),
+                               component_tag=component_tag,
+                               dependencies_tag=dependencies_tag)
             
     def _get_resource_dir(self, global_resource_path: Path) -> Path:
         return global_resource_path / self.name()

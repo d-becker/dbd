@@ -32,14 +32,6 @@ class ComponentConfig:
     @property
     def image_name(self) -> str:
         return self._image_name
-
-    def as_dict(self) -> Dict[str, str]:
-        d = {}
-        d["dist_type"] = "release" if self.dist_type == DistType.RELEASE else "snapshot"
-        d["version"] = self.version
-        d["image_name"] = self.image_name
-
-        return d
     
 class Configuration:
     def __init__(self,
