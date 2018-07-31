@@ -12,6 +12,8 @@ cli_options["all"] = ["-DnameNode=hdfs://namenode:9000",
                       "-DresourceManager=resourcemanager:8032"]
 cli_options["hive2"] = ["-DjdbcURL=jdbc:hive2://hiveserver2:10000/default"]
 
+blacklist: List[str] = ["ssh"]
+
 example_dir = Path("~/examples/apps").expanduser()
 
 def get_workflow_example_dirs(example_dir: Path) -> List[Path]:
@@ -98,22 +100,32 @@ def run_examples(examples: List[Path], poll_time: int = 1, timeout: int = 60) ->
     results: Dict[str, str] = dict()
     
     for example_dir in examples:
-        print("Running example {}.".format(example_dir.name))
-        launch_result = launch_example(example_dir)
-
-        if isinstance(launch_result, int):
-            print("Starting example {} failed with exit code {}.".format(example_dir.name, launch_result))
-            results[example_dir.name] = "Starting failed with exit code {}.".format(launch_result)
+        if example_dir.name in blacklist:
+            print("Omitting blacklisted example: {}.".format(example_dir.name))
         else:
-            results[example_dir.name] = wait_for_job_to_finish(launch_result, poll_time, timeout)
+            print("Running example {}.".format(example_dir.name))
+            launch_result = launch_example(example_dir)
+
+            if isinstance(launch_result, int):
+                print("Starting example {} failed with exit code {}.".format(example_dir.name, launch_result))
+                results[example_dir.name] = "Starting failed with exit code {}.".format(launch_result)
+            else:
+                results[example_dir.name] = wait_for_job_to_finish(launch_result, poll_time, timeout)
         print()
 
     return results
 
+def print_report(results: Dict[str, str]):
+    sorted_tests = list(results.keys())
+    sorted_tests.sort()
+
+    for test in sorted_tests:
+        print("{}:\t{}".format(test, results[test]))
+
 def main() -> None:
     example_dirs = get_workflow_example_dirs(example_dir)
     results = run_examples(example_dirs, 1, 60)
-    print(results)
+    print_report(results)
 
 if __name__ == "__main__":
     main()
