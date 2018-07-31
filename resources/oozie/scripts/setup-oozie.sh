@@ -13,13 +13,15 @@ done
 sudo -u hadoop JAVA_HOME=$JAVA_HOME hdfs dfs -mkdir /user
 sudo -u hadoop JAVA_HOME=$JAVA_HOME hdfs dfs -mkdir /user/oozie
 sudo -u hadoop JAVA_HOME=$JAVA_HOME hdfs dfs -chown -R oozie:oozie /user/oozie
-sudo -u hadoop JAVA_HOME=$JAVA_HOME hdfs dfs -chmod -R g+w /
+sudo -u hadoop JAVA_HOME=$JAVA_HOME hdfs dfs -chmod -R a+w /
 
 echo "Successfully set up hdfs user directory." >> docker_oozie_logs.txt
 
 /opt/oozie/bin/oozie-setup.sh sharelib create -fs hdfs://namenode:9000
 
 echo "Successfully uploaded the sharelib." >> docker_oozie_logs.txt
+
+sudo -u hadoop JAVA_HOME=$JAVA_HOME hdfs dfs -chmod -R a+rwx /
 
 echo "Write permissions on hdfs." >> docker_oozie_logs.txt
 

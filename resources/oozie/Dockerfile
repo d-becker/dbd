@@ -1,7 +1,7 @@
 ARG HADOOP_IMAGE
 FROM ${HADOOP_IMAGE}
 USER root
-RUN apk add --update --no-cache python zip
+RUN apk add --update --no-cache python python3 zip
 WORKDIR /opt
 COPY tmp/oozie.tar.gz /opt
 RUN tar zxf oozie.tar.gz && rm oozie.tar.gz && mv oozie* oozie

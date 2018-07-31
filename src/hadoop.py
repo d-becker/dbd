@@ -1,15 +1,13 @@
 #!/usr/bin/env python3
 
-import re, shutil, tarfile
+import re
 
-from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
-import docker, wget
+import docker
 
 from component_builder import DistType, ComponentConfig, Configuration
 import base_image_builder
-import utils
 
 class ImageBuilder(base_image_builder.BaseImageBuilder):
     def __init__(self) -> None:

@@ -1,0 +1,21 @@
+services:
+   metastoredb:
+     image: postgres
+     environment:
+       POSTGRES_PASSWORD: rootpwd
+       POSTGRES_DB: metastore
+       POSTGRES_USER: hive
+   metastore:
+     image: ${HIVE_IMAGE}
+     command: ["hive","--service", "metastore"]
+     env_file:
+        - ./compose-config
+   hiveserver2:
+     image: ${HIVE_IMAGE}
+     command: ["hive","--service", "hiveserver2"]
+     environment:
+        HADOOP_CONF_DIR: /opt/hive/conf
+     ports:
+        - 10002:10002
+     env_file:
+        - ./compose-config

@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import re, shutil, subprocess, tarfile
 
 from pathlib import Path
@@ -57,6 +59,7 @@ class ImageBuilder(base_image_builder.BaseImageBuilder):
         script_file = oozie_dir / "bin" / "mkdistro.sh"
         command = [str(script_file),
                    "-Puber",
+                   "-Ptez",
                    # "-Dhadoop.version={}".format(hadoop_version),
                    "-DskipTests"]
 
