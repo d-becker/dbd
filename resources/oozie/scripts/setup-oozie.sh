@@ -1,6 +1,6 @@
 touch docker_oozie_logs.txt
 
-python scripts/xmlcombine.py /opt/oozie/conf/hadoop-conf/core-site.xml /opt/hadoop/etc/hadoop/core-site.xml > tmp.xml
+python3 scripts/xmlcombine.py /opt/oozie/conf/hadoop-conf/core-site.xml /opt/hadoop/etc/hadoop/core-site.xml > tmp.xml
 mv tmp.xml /opt/oozie/conf/hadoop-conf/core-site.xml
 
 echo "Successfully copied the contents of the Hadoop core-site.xml to the Oozie configuration." > docker_oozie_logs.txt
