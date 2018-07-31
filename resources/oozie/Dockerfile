@@ -8,7 +8,8 @@ RUN tar zxf oozie.tar.gz && rm oozie.tar.gz && mv oozie* oozie
 RUN adduser -h /opt/oozie -s /bin/bash -G flokkr -D oozie \
     && addgroup supergroup \
     && adduser oozie supergroup \
-    && chown -R oozie /opt/oozie
+    && chown -R oozie /opt/oozie \
+    && passwd -d oozie
 USER oozie
 WORKDIR /opt/oozie
 COPY scripts ./scripts

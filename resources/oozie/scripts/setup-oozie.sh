@@ -1,5 +1,3 @@
-touch docker_oozie_logs.txt
-
 python3 scripts/xmlcombine.py /opt/oozie/conf/hadoop-conf/core-site.xml /opt/hadoop/etc/hadoop/core-site.xml > tmp.xml
 mv tmp.xml /opt/oozie/conf/hadoop-conf/core-site.xml
 
@@ -24,11 +22,6 @@ echo "Successfully uploaded the sharelib." >> docker_oozie_logs.txt
 sudo -u hadoop JAVA_HOME=$JAVA_HOME hdfs dfs -chmod -R a+rwx /
 
 echo "Write permissions on hdfs." >> docker_oozie_logs.txt
-
-tar -xzf oozie-examples.tar.gz
-hdfs dfs -put examples examples
-
-echo "Examples uploaded to hdfs." >> docker_oozie_logs.txt
 
 /opt/oozie/bin/oozied.sh start
 
