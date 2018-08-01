@@ -23,7 +23,7 @@ class ImageBuilder(base_image_builder.BaseImageBuilder):
                                                      version_from_image_name)
         
     def _find_out_version_from_image(self, docker_client: docker.DockerClient, image_name: str) -> str:
-        command = "bin/oozie version && exit 0" # Workaround: exit 0 is needed, otherwise the container exits with status 1 for some reason.
+        command = "bin/oozied.sh start && bin/oozie version && exit 0" # Workaround: exit 0 is needed, otherwise the container exits with status 1 for some reason.
         response_bytes = docker_client.containers.run(image_name, command, auto_remove=True)
         response = response_bytes.decode()
 
