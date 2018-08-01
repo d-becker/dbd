@@ -12,7 +12,7 @@ cli_options["all"] = ["-DnameNode=hdfs://namenode:9000",
                       "-DresourceManager=resourcemanager:8032"]
 cli_options["hive2"] = ["-DjdbcURL=jdbc:hive2://hiveserver2:10000/default"]
 
-blacklist: List[str] = ["ssh"]
+blacklist: List[str] = []
 
 example_dir = Path("~/examples/apps").expanduser()
 

@@ -96,6 +96,7 @@ class BaseImageBuilder(ComponentImageBuilder):
 
         dockerfile_path = self._get_resource_dir(built_config.resource_path)
         self._docker_client.images.build(path=str(dockerfile_path), buildargs=buildargs, tag=image_name, rm=True)
+        print("Docker image built.")
 
     def _get_image_name(self,
                         dist_type: DistType,

@@ -3,7 +3,7 @@
 import argparse, importlib, os, re, shutil, sys, time, __main__
 
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Set
 
 import docker, yaml
 
@@ -53,6 +53,16 @@ def build_component_images(name: str,
 
     return resulting_configuration
 
+def dependencies_without_configuration(components: List[str],
+                                       dependencies: Dict[str, List[str]]) -> Set[str]:
+    components_set = set(components)
+    
+    dependencies_set: Set[str] = set()
+    for dependency_list in dependencies.values():
+        dependencies_set.update(dependency_list)
+
+    return dependencies_set - components_set
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Create a directory which can be used by docker-compose " +
                                      "using the provided components, building the needed docker images.")
@@ -83,6 +93,12 @@ def main() -> None:
     image_builders = get_component_image_builders(components)
 
     dependencies = get_component_dependencies(image_builders)
+
+    deps_without_config = dependencies_without_configuration(components, dependencies)
+    if len(deps_without_config) > 0:
+        print("Error: the following components are not specified in the configuration but are needed as dependencies"
+              "by other components: {}".format(str(list(deps_without_config))))
+        return
 
     dag = graph.build_graph_from_dependencies(dependencies)
     topologically_sorted_components = dag.get_topologically_sorted_nodes()
