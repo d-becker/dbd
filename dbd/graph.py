@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 
-from typing import Any, Dict, List, Set, Tuple
+from typing import Dict, List
 
 class DAG:
-    def __init__(self):
+    def __init__(self) -> None:
         self._nodes: List[str] = []
         self._edges: Dict[str, List[str]] = {}
         self._parentless_nodes: List[str] = []
@@ -12,7 +12,7 @@ class DAG:
     def nodes(self) -> List[str]:
         return self._nodes[:]
 
-    def add_node(self, name: str, parents: List[str]):
+    def add_node(self, name: str, parents: List[str]) -> None:
         if name in self.nodes:
             raise ValueError("The node with name {} is already in the DAG.".format(name))
 
@@ -28,12 +28,12 @@ class DAG:
 
         if len(parents) == 0:
             self._parentless_nodes.append(name)
-            
+
         self._nodes.append(name)
 
     def contains_node(self, node: str) -> bool:
         return node in self._nodes
-    
+
     def contains_edge(self, parent: str, child: str) -> bool:
         if parent not in self._edges:
             return False
@@ -62,7 +62,7 @@ class DAG:
 
         return topological_order
 
-    def _visit_node(self, node: str, topological_order: List[str]):
+    def _visit_node(self, node: str, topological_order: List[str]) -> None:
         if node in topological_order:
             return
 
@@ -70,8 +70,6 @@ class DAG:
             self._visit_node(child, topological_order)
 
         topological_order.insert(0, node)
-        
-        
 
 def build_graph_from_dependencies(dependencies: Dict[str, List[str]]) -> DAG:
     dag = DAG()
@@ -80,11 +78,11 @@ def build_graph_from_dependencies(dependencies: Dict[str, List[str]]) -> DAG:
         _add_node_to_dag_recursively(dependencies, node, dag, [])
 
     return dag
-        
+
 def _add_node_to_dag_recursively(dependencies_by_node: Dict[str, List[str]],
                                  node_to_add: str,
                                  dag: DAG,
-                                 pending: List[str]):
+                                 pending: List[str]) -> None:
     if dag.contains_node(node_to_add):
         return
 

@@ -3,7 +3,7 @@
 from abc import ABCMeta, abstractmethod
 from enum import Enum, auto, unique
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Dict, List
 
 import __main__
 
@@ -32,7 +32,7 @@ class ComponentConfig:
     @property
     def image_name(self) -> str:
         return self._image_name
-    
+
 class Configuration:
     def __init__(self,
                  name: str,
@@ -45,7 +45,7 @@ class Configuration:
 
         default_path = Path(__main__.__file__).parent.resolve().parent / "resources"
         self._resource_path: Path = default_path  if resource_path is None else resource_path
-        self.components : Dict[str, ComponentConfig] = {}
+        self.components: Dict[str, ComponentConfig] = {}
 
     @property
     def name(self) -> str:
@@ -65,10 +65,12 @@ class Configuration:
 
 class ComponentImageBuilder(metaclass=ABCMeta):
     @abstractmethod
-    def name(self) -> str: pass
+    def name(self) -> str:
+        pass
 
     @abstractmethod
-    def dependencies(self) -> List[str]: pass
+    def dependencies(self) -> List[str]:
+        pass
 
     @abstractmethod
     def build(self,

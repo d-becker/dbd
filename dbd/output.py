@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import io, shutil
+import io
 from pathlib import Path
 from typing import Any, Dict, List
 
@@ -8,7 +8,7 @@ import yaml
 
 from component_builder import Configuration, DistType
 
-def extend_docker_compose_dict(original: Dict[str, Dict[str, Any]], other: Dict[str, Dict[str, Any]]):
+def extend_docker_compose_dict(original: Dict[str, Dict[str, Any]], other: Dict[str, Dict[str, Any]]) -> None:
     for key in other.keys():
         if key not in original:
             original[key] = dict()
@@ -25,7 +25,7 @@ def extend_docker_compose_dict(original: Dict[str, Dict[str, Any]], other: Dict[
 
 def generate_docker_compose_file_text(sorted_components: List[str], resource_path: Path) -> str:
     document_body: Dict[str, Dict[str, Any]] = dict()
-    
+
     for component in sorted_components:
         file_path = resource_path / component / "docker-compose_part.yaml"
 
@@ -93,7 +93,7 @@ def generate_config_report(configuration: Configuration) -> str:
                    + "\n")
         text.write(indentation * 2 + "version: " + config.version + "\n")
         text.write(indentation * 2 + "image_name: " + config.image_name + "\n")
-    
+
     return text.getvalue()
 
 def generate_env_file_text(configuration: Configuration) -> str:

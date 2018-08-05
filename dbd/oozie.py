@@ -1,15 +1,16 @@
 #!/usr/bin/env python3
 
-import re, shutil, subprocess, tarfile
+import re
+import shutil
+import subprocess
+import tarfile
 
 from pathlib import Path
-from typing import Dict, List, Tuple
 
-import docker, wget
+import docker
 
-from component_builder import ComponentConfig, ComponentImageBuilder, Configuration, DistType
+from component_builder import Configuration
 import base_image_builder
-import utils
 
 class ImageBuilder(base_image_builder.BaseImageBuilder):
     def __init__(self) -> None:
@@ -21,9 +22,11 @@ class ImageBuilder(base_image_builder.BaseImageBuilder):
                                                      ["hadoop"],
                                                      url_template,
                                                      version_from_image_name)
-        
-    def _find_out_version_from_image(self, docker_client: docker.DockerClient, image_name: str) -> str:
-        command = "bin/oozied.sh start && bin/oozie version && exit 0" # Workaround: exit 0 is needed, otherwise the container exits with status 1 for some reason.
+
+    @staticmethod
+    def _find_out_version_from_image(docker_client: docker.DockerClient, image_name: str) -> str:
+        # Workaround: exit 0 is needed, otherwise the container exits with status 1 for some reason.
+        command = "bin/oozied.sh start && bin/oozie version && exit 0"
         response_bytes = docker_client.containers.run(image_name, command, auto_remove=True)
         response = response_bytes.decode()
 
@@ -35,12 +38,13 @@ class ImageBuilder(base_image_builder.BaseImageBuilder):
         version = match.group(1)
         return version
 
+    # pylint: disable=arguments-differ
     def _prepare_tarfile_release(self,
                                  oozie_version: str,
                                  tmp_path: Path,
-                                 built_config: Configuration):
+                                 built_config: Configuration) -> None:
         base_image_builder.BaseImageBuilder._prepare_tarfile_release(self, oozie_version, tmp_path, built_config)
-        
+
         out_path = tmp_path / "oozie.tar.gz"
 
         print("Extracting the downloaded oozie tar file.")
@@ -70,7 +74,7 @@ class ImageBuilder(base_image_builder.BaseImageBuilder):
 
         print("Building the Oozie distribution against Hadoop version {}.".format(hadoop_version))
         print("Build command: {}.".format(" ".join(command)))
-        
+
         subprocess.run(command, check=True)
         distro_file_path = oozie_dir / "distro/target/oozie-{}-distro.tar.gz".format(oozie_version)
         new_oozie_distro_path = tmp_path / "oozie.tar.gz"

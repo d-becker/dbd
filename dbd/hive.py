@@ -1,17 +1,14 @@
 #!/usr/bin/env python3
 
-from typing import Any, Dict, List, Optional, Tuple
-
 import docker
 
-from component_builder import DistType, ComponentConfig, Configuration
 import base_image_builder
 
 class ImageBuilder(base_image_builder.BaseImageBuilder):
     def __init__(self) -> None:
         url_template = "http://xenia.sote.hu/ftp/mirrors/www.apache.org/hive/hive-{0}/apache-hive-{0}-bin.tar.gz"
         version_from_image_name = self._find_out_version_from_image
-        
+
         base_image_builder.BaseImageBuilder.__init__(self,
                                                      "hive",
                                                      ["hadoop"],

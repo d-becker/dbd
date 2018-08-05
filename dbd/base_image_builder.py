@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 
-import re, shutil, tarfile
+import tarfile
 
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Callable, Dict, List, Optional
 
-import docker, wget
+import docker
+import wget
 
 from component_builder import DistType, ComponentConfig, ComponentImageBuilder, Configuration
 import utils
@@ -24,7 +25,7 @@ class BaseImageBuilder(ComponentImageBuilder):
 
     def name(self) -> str:
         return self._name
-    
+
     def dependencies(self) -> List[str]:
         return self._dependencies
 
@@ -64,8 +65,11 @@ class BaseImageBuilder(ComponentImageBuilder):
 
         return ComponentConfig(dist_type, version, image_name)
 
-    def _prepare_tarfile_release(self, version: str, tmp_dir: Path, built_config: Configuration):
-        url=self._url_template.format(version)
+    def _prepare_tarfile_release(self,
+                                 version: str,
+                                 tmp_dir: Path,
+                                 _built_config: Configuration) -> None:
+        url = self._url_template.format(version)
         print("Downloading {} release version {} from {}.".format(self.name(), version, url))
 
         out_path = tmp_dir / "{}.tar.gz".format(self.name())
@@ -76,7 +80,7 @@ class BaseImageBuilder(ComponentImageBuilder):
     def _prepare_tarfile_snapshot(self,
                                   path: Path,
                                   tmp_dir: Path,
-                                  built_config: Configuration):
+                                  _built_config: Configuration) -> None:
         print("Preparing {} snapshot version from path {}.".format(self.name(), path))
 
         with tarfile.open(tmp_dir / "{}.tar.gz".format(self.name()), "w:gz") as tar:
@@ -129,6 +133,6 @@ class BaseImageBuilder(ComponentImageBuilder):
                                component=self.name(),
                                component_tag=component_tag,
                                dependencies_tag=dependencies_tag)
-            
+
     def _get_resource_dir(self, global_resource_path: Path) -> Path:
         return global_resource_path / self.name()

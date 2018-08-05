@@ -28,7 +28,7 @@ class TestDAG(unittest.TestCase):
 
         self.assertTrue(dag.contains_edge("A", "C"))
         self.assertTrue(dag.contains_edge("B", "C"))
-        
+
         self.assertFalse(dag.contains_edge("A", "B"))
         self.assertFalse(dag.contains_edge("B", "A"))
         self.assertFalse(dag.contains_edge("C", "A"))
@@ -86,15 +86,16 @@ class TestDAG(unittest.TestCase):
     def test_build_graph_from_dependencies_ok(self) -> None:
         dependencies = self._get_normal_dependencies()
 
-        dag = build_graph_from_dependencies(dependencies)
+        build_graph_from_dependencies(dependencies)
 
     def test_build_graph_from_dependencies_fails_cyclic_dependencies(self) -> None:
         cyclic_dependencies = self._get_cyclic_dependencies()
 
         with self.assertRaises(ValueError):
-            dag = build_graph_from_dependencies(cyclic_dependencies)
+            build_graph_from_dependencies(cyclic_dependencies)
 
-    def _get_normal_dag(self) -> DAG:
+    @staticmethod
+    def _get_normal_dag() -> DAG:
         dag = DAG()
 
         dag.add_node("A", [])
@@ -103,7 +104,8 @@ class TestDAG(unittest.TestCase):
 
         return dag
 
-    def _get_complicated_dag(self) -> DAG:
+    @staticmethod
+    def _get_complicated_dag() -> DAG:
         dag = DAG()
 
         dag.add_node("A", [])
@@ -117,7 +119,8 @@ class TestDAG(unittest.TestCase):
 
         return dag
 
-    def _get_normal_dependencies(self) -> Dict[str, List[str]]:
+    @staticmethod
+    def _get_normal_dependencies() -> Dict[str, List[str]]:
         dependencies = dict()
 
         dependencies["E"] = ["C"]
@@ -131,7 +134,8 @@ class TestDAG(unittest.TestCase):
 
         return dependencies
 
-    def _get_cyclic_dependencies(self) -> Dict[str, List[str]]:
+    @staticmethod
+    def _get_cyclic_dependencies() -> Dict[str, List[str]]:
         dependencies = dict()
 
         dependencies["A"] = ["B"]
@@ -158,6 +162,5 @@ class TestDAG(unittest.TestCase):
             for child in children:
                 child_index = sorted_nodes.index(child)
 
-                msg="Child {} comes before its parent {} in the topologically sorted list.".format(child, node)
+                msg = "Child {} comes before its parent {} in the topologically sorted list.".format(child, node)
                 self.assertTrue(index < child_index, msg=msg)
-
