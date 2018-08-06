@@ -10,11 +10,8 @@ import tarfile
 
 from pathlib import Path
 
-import docker
-
 from component_builder import Configuration
 import base_image_builder
-import utils
 
 class ImageBuilder(base_image_builder.BaseImageBuilder):
     """
@@ -24,17 +21,15 @@ class ImageBuilder(base_image_builder.BaseImageBuilder):
     def __init__(self) -> None:
         url_template = "https://archive.apache.org//dist/oozie/{0}/oozie-{0}.tar.gz"
 
+        version_command = "bin/oozied.sh start && bin/oozie version"
+        version_regex = "version: (.*)\n"
+
         base_image_builder.BaseImageBuilder.__init__(self,
                                                      "oozie",
                                                      ["hadoop"],
                                                      url_template,
-                                                     self._find_out_version_from_image_name)
-
-    def _find_out_version_from_image_name(self, docker_client: docker.DockerClient, image_name: str) -> str:
-        command = "bin/oozied.sh start && bin/oozie version"
-        regex = "version: (.*)\n"
-
-        return utils.find_out_version_from_image(docker_client, image_name, self.name(), command, regex)
+                                                     version_command,
+                                                     version_regex)
 
     # pylint: disable=arguments-differ
     def _prepare_tarfile_release(self,

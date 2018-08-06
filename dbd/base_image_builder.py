@@ -3,7 +3,7 @@
 import tarfile
 
 from pathlib import Path
-from typing import Callable, Dict, List, Optional
+from typing import Dict, List, Optional
 
 import docker
 import wget
@@ -16,12 +16,14 @@ class BaseImageBuilder(ComponentImageBuilder):
                  component_name: str,
                  dependencies: List[str],
                  url_template: str,
-                 version_from_image_name: Callable[[docker.DockerClient, str], str]) -> None:
+                 version_command: str,
+                 version_regex: str) -> None:
         self._name = component_name
         self._dependencies = dependencies
         self._url_template = url_template # A string with {0} which will be formatted with the version.
         self._docker_client = docker.from_env()
-        self._version_from_image_name = version_from_image_name
+        self._version_command = version_command
+        self._version_regex = version_regex
 
     def name(self) -> str:
         return self._name
@@ -61,7 +63,11 @@ class BaseImageBuilder(ComponentImageBuilder):
         if dist_type == DistType.RELEASE:
             version = argument
         else:
-            version = self._version_from_image_name(self._docker_client, image_name)
+            version = utils.find_out_version_from_image(self._docker_client,
+                                                        image_name,
+                                                        self.name(),
+                                                        self._version_command,
+                                                        self._version_regex)
 
         return ComponentConfig(dist_type, version, image_name)
 
