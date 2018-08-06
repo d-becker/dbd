@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
 
+"""
+The main module of the application containing the entry point.
+"""
+
 import argparse
 import importlib
 import time
@@ -16,7 +20,7 @@ import output
 
 from component_builder import ComponentImageBuilder, Configuration
 
-def get_argument_parser() -> argparse.ArgumentParser:
+def _get_argument_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Create a directory which can be used by docker-compose " +
                                      "using the provided components, building the needed docker images.")
     parser.add_argument("config_file", help="the configuration file to be used")
@@ -29,12 +33,12 @@ def get_argument_parser() -> argparse.ArgumentParser:
 
     return parser
 
-def parse_yaml(filename: str) -> Dict[str, Any]:
+def _parse_yaml(filename: str) -> Dict[str, Any]:
     with open(filename) as file:
         text = file.read()
         return yaml.load(text)
 
-def get_force_rebuild_components(args: argparse.Namespace, components: List[str]) -> List[str]:
+def _get_force_rebuild_components(args: argparse.Namespace, components: List[str]) -> List[str]:
     force_rebuild_components: List[str]
 
     if args.force is not None and len(args.force) == 0:
@@ -46,33 +50,33 @@ def get_force_rebuild_components(args: argparse.Namespace, components: List[str]
 
     return force_rebuild_components
 
-def get_components(conf: Dict[str, Any]) -> List[str]:
+def _get_components(conf: Dict[str, Any]) -> List[str]:
     return list(conf["components"].keys())
 
-def get_component_image_builders(components: List[str]) -> Dict[str, ComponentImageBuilder]:
+def _get_component_image_builders(components: List[str]) -> Dict[str, ComponentImageBuilder]:
     modules = map(importlib.import_module, components)
     image_builders = map(lambda module: module.__dict__["ImageBuilder"](), modules)
 
     return dict(zip(components, image_builders))
 
-def get_component_dependencies(image_builders: Dict[str, ComponentImageBuilder]) -> Dict[str, List[str]]:
+def _get_component_dependencies(image_builders: Dict[str, ComponentImageBuilder]) -> Dict[str, List[str]]:
     items = [(component_name, image_builders[component_name].dependencies())
              for component_name in image_builders.keys()]
     return dict(items)
 
-def get_initial_configuration(name: str) -> Configuration:
+def _get_initial_configuration(name: str) -> Configuration:
     timestamp: str = str(int(time.time()))
     repository: str = "dbd"
     resource_path: Path = Path(__main__.__file__).parent.resolve().parent / "resources"
 
     return Configuration(name, timestamp, repository, resource_path)
 
-def build_component_images(name: str,
-                           components: List[str],
-                           input_configuration: Dict[str, Dict[str, str]],
-                           image_builders: Dict[str, ComponentImageBuilder],
-                           force_rebuild: List[str]) -> Configuration:
-    resulting_configuration = get_initial_configuration(name)
+def _build_component_images(name: str,
+                            components: List[str],
+                            input_configuration: Dict[str, Dict[str, str]],
+                            image_builders: Dict[str, ComponentImageBuilder],
+                            force_rebuild: List[str]) -> Configuration:
+    resulting_configuration = _get_initial_configuration(name)
 
     print("Building components in the following order: {}.".format(components))
 
@@ -85,8 +89,8 @@ def build_component_images(name: str,
 
     return resulting_configuration
 
-def dependencies_without_configuration(components: List[str],
-                                       dependencies: Dict[str, List[str]]) -> Set[str]:
+def _dependencies_without_configuration(components: List[str],
+                                        dependencies: Dict[str, List[str]]) -> Set[str]:
     components_set = set(components)
 
     dependencies_set: Set[str] = set()
@@ -96,20 +100,24 @@ def dependencies_without_configuration(components: List[str],
     return dependencies_set - components_set
 
 def main() -> None:
-    parser = get_argument_parser()
+    """
+    The entry point to the application. Run on the command line with `--help` to get information on usage.
+    """
+
+    parser = _get_argument_parser()
     args = parser.parse_args()
 
-    input_conf = parse_yaml(args.config_file)
+    input_conf = _parse_yaml(args.config_file)
     name = input_conf["name"]
-    components = get_components(input_conf)
+    components = _get_components(input_conf)
 
-    force_rebuild_components = get_force_rebuild_components(args, components)
+    force_rebuild_components = _get_force_rebuild_components(args, components)
 
-    image_builders = get_component_image_builders(components)
+    image_builders = _get_component_image_builders(components)
 
-    dependencies = get_component_dependencies(image_builders)
+    dependencies = _get_component_dependencies(image_builders)
 
-    deps_without_config = dependencies_without_configuration(components, dependencies)
+    deps_without_config = _dependencies_without_configuration(components, dependencies)
     if len(deps_without_config) > 0:
         print("Error: the following components are not specified in the configuration but are needed as dependencies"
               "by other components: {}".format(str(list(deps_without_config))))
@@ -118,11 +126,11 @@ def main() -> None:
     dag = graph.build_graph_from_dependencies(dependencies)
     topologically_sorted_components = dag.get_topologically_sorted_nodes()
 
-    output_configuration = build_component_images(name,
-                                                  topologically_sorted_components,
-                                                  input_conf["components"],
-                                                  image_builders,
-                                                  force_rebuild_components)
+    output_configuration = _build_component_images(name,
+                                                   topologically_sorted_components,
+                                                   input_conf["components"],
+                                                   image_builders,
+                                                   force_rebuild_components)
 
     output.generate_output(topologically_sorted_components, output_configuration, Path(args.output_dir))
 

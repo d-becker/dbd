@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
 
+"""
+This module contains an interface for classes that build docker
+images for the components and classes that are needed for them.
+"""
+
 from abc import ABCMeta, abstractmethod
 from enum import Enum, auto, unique
 from pathlib import Path
@@ -9,10 +14,18 @@ import __main__
 
 @unique
 class DistType(Enum):
+    """
+    An enum to store the distribution types, i.e. release or snapshot.
+    """
+
     RELEASE = auto()
     SNAPSHOT = auto()
 
 class ComponentConfig:
+    """
+    A class that contains information about a built docker image with a component.
+    """
+
     def __init__(self,
                  dist_type: DistType,
                  version: str,
@@ -23,17 +36,33 @@ class ComponentConfig:
 
     @property
     def dist_type(self) -> DistType:
+        """
+        The type of the distribution, i.e. release or snapshot.
+        """
+
         return self._dist_type
 
     @property
     def version(self) -> str:
+        """
+        The version of the component in the docker image.
+        """
+
         return self._version
 
     @property
     def image_name(self) -> str:
+        """
+        The name of the docker image that was built.
+        """
+
         return self._image_name
 
 class Configuration:
+    """
+    A class that holds information about the overall build and on all components and images.
+    """
+
     def __init__(self,
                  name: str,
                  timestamp: str,
@@ -49,31 +78,78 @@ class Configuration:
 
     @property
     def name(self) -> str:
+        """
+        The name of the configuration (specified by the user).
+        """
+
         return self._name
 
     @property
     def timestamp(self) -> str:
+        """
+        The timestamp of the current build of the configuration.
+        """
+
         return self._timestamp
 
     @property
     def repository(self) -> str:
+        """
+        The docker repository to build the images in.
+        """
+
         return self._repository
 
     @property
     def resource_path(self) -> Path:
+        """
+        The file system path to the resource files.
+        """
+
         return self._resource_path
 
 class ComponentImageBuilder(metaclass=ABCMeta):
+    """
+    An interface for classes that build docker images for individual components.
+
+    Each component should have a module with the name of the component which
+    contains a class called ImageBuilder implementing this interface.
+    """
+
     @abstractmethod
     def name(self) -> str:
+        """
+        Returns the name of the component for which the image is built.
+
+        """
         pass
 
     @abstractmethod
     def dependencies(self) -> List[str]:
+        """
+        Returns the dependencies of the component for which the image is built. The dependencies are other
+        components for which the image needs to be built before building the image for this component.
+        """
         pass
 
     @abstractmethod
     def build(self,
               component_config: Dict[str, str],
               built_config: Configuration,
-              force_rebuild: bool = False) -> ComponentConfig: pass
+              force_rebuild: bool = False) -> ComponentConfig:
+        """
+        Builds the image for this component and returns a `ComponentConfig` object
+        containing information about the component and the built image.
+
+        Args:
+            component_config: A dictionary that contains (usually user-provided)
+                configuration information about the component.
+            built_config: A `Configuration` object that contains information about
+                previously built components and images. This should never be modified.
+            force_rebuild: Rebuild the image even if the requested image already exists.
+
+        Returns:
+            A `ComponentConfig` object containing information about the component and the built image.
+
+        """
+        pass

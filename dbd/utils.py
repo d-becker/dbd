@@ -1,3 +1,10 @@
+#!/usr/bin/env python3
+
+"""
+This module contains utility functions that other modules can use.
+
+"""
+
 import re
 import shutil
 
@@ -9,6 +16,18 @@ import docker
 from component_builder import DistType
 
 def image_exists_locally(client: docker.DockerClient, image_name: str) -> bool:
+    """
+    Checks whether a docker image with a given name exists locally.
+
+    Args:
+        client: The docker client to use to check whether the given image exists.
+        image_name: The name of the docker image to check.
+
+    Returns:
+        True if the docker image with name `image_name` exists locally; False otherwise.
+
+    """
+
     try:
         client.images.get(image_name)
     except docker.errors.ImageNotFound:
@@ -17,6 +36,18 @@ def image_exists_locally(client: docker.DockerClient, image_name: str) -> bool:
         return True
 
 def dist_type_and_arg(component_config: Dict[str, str]) -> Tuple[DistType, str]:
+    """
+    Returns the distribution type (release or snapshot) and the corresponding argument
+    (version or path to snapshot buid) from a component configuration dictionary.
+
+    Args:
+        component_config: A dictionary containing information about a component.
+
+    Returns:
+        The distribution type (release or snapshot) and the corresponding argument (version or path to snapshot buid).
+
+    """
+
     release_specified = "release" in component_config
     snapshot_specified = "snapshot" in component_config
 
@@ -41,7 +72,7 @@ def find_out_version_from_image(docker_client: docker.DockerClient,
                                 command: str,
                                 regex: str) -> str:
     """
-    Utility function to retrieve the version of a component from a docker image.
+    Retrieves the version of a component from a docker image.
 
     Args:
         docker_client: The docker client object to use when starting the container.

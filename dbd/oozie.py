@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
 
+"""
+This module contains the ImageBuilder for Oozie.
+"""
+
 import shutil
 import subprocess
 import tarfile
@@ -13,6 +17,10 @@ import base_image_builder
 import utils
 
 class ImageBuilder(base_image_builder.BaseImageBuilder):
+    """
+    The ImageBuilder class for Oozie.
+    """
+
     def __init__(self) -> None:
         url_template = "https://archive.apache.org//dist/oozie/{0}/oozie-{0}.tar.gz"
 
@@ -20,9 +28,9 @@ class ImageBuilder(base_image_builder.BaseImageBuilder):
                                                      "oozie",
                                                      ["hadoop"],
                                                      url_template,
-                                                     self.version_from_image_name)
+                                                     self._find_out_version_from_image_name)
 
-    def version_from_image_name(self, docker_client: docker.DockerClient, image_name: str) -> str:
+    def _find_out_version_from_image_name(self, docker_client: docker.DockerClient, image_name: str) -> str:
         command = "bin/oozied.sh start && bin/oozie version"
         regex = "version: (.*)\n"
 
