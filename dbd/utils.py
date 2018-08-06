@@ -1,3 +1,4 @@
+import re
 import shutil
 
 from pathlib import Path
@@ -25,12 +26,47 @@ def dist_type_and_arg(component_config: Dict[str, str]) -> Tuple[DistType, str]:
     if not release_specified and not snapshot_specified:
         raise ValueError("None of release and snapshot mode specified.")
 
+    # pylint: disable=no-else-return
     if release_specified:
         version = component_config["release"]
         return (DistType.RELEASE, version)
     else:
         path = component_config["snapshot"]
         return (DistType.SNAPSHOT, path)
+
+
+def find_out_version_from_image(docker_client: docker.DockerClient,
+                                image_name: str,
+                                component_name: str,
+                                command: str,
+                                regex: str) -> str:
+    """
+    Utility function to retrieve the version of a component from a docker image.
+
+    Args:
+        docker_client: The docker client object to use when starting the container.
+        image_name: The name of the docker image from which the version should be retrieved.
+        componenet_name: The name of the component the version of which should be retrieved.
+        command: The command to run inside the docker container - the output should contain the version number.
+        regex: A regular expression that will be matched against the output of `command` using the `re.search`
+            function. Group 1 of the regex should catch the verion number string.
+    Returns: The version number as a string.
+    Raises: ValueError: If no match is found.
+
+    """
+
+    # Workaround: exit 0 is needed, otherwise the container exits with status 1 for some reason.
+    command_to_use = "{} && exit 0".format(command)
+    response_bytes = docker_client.containers.run(image_name, command_to_use, auto_remove=True)
+    response = response_bytes.decode()
+
+    match = re.search(regex, response)
+
+    if match is None:
+        raise ValueError("No {} version found.".format(component_name))
+
+    version = match.group(1)
+    return version
 
 class TmpDirHandler:
     def __init__(self, base_path: Path) -> None:

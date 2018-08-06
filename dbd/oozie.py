@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 
-import re
 import shutil
 import subprocess
 import tarfile
@@ -11,32 +10,23 @@ import docker
 
 from component_builder import Configuration
 import base_image_builder
+import utils
 
 class ImageBuilder(base_image_builder.BaseImageBuilder):
     def __init__(self) -> None:
         url_template = "https://archive.apache.org//dist/oozie/{0}/oozie-{0}.tar.gz"
-        version_from_image_name = self._find_out_version_from_image
 
         base_image_builder.BaseImageBuilder.__init__(self,
                                                      "oozie",
                                                      ["hadoop"],
                                                      url_template,
-                                                     version_from_image_name)
+                                                     self.version_from_image_name)
 
-    @staticmethod
-    def _find_out_version_from_image(docker_client: docker.DockerClient, image_name: str) -> str:
-        # Workaround: exit 0 is needed, otherwise the container exits with status 1 for some reason.
-        command = "bin/oozied.sh start && bin/oozie version && exit 0"
-        response_bytes = docker_client.containers.run(image_name, command, auto_remove=True)
-        response = response_bytes.decode()
+    def version_from_image_name(self, docker_client: docker.DockerClient, image_name: str) -> str:
+        command = "bin/oozied.sh start && bin/oozie version"
+        regex = "version: (.*)\n"
 
-        match = re.search("version: (.*)\n", response)
-
-        if match is None:
-            raise ValueError("No Oozie version found.")
-
-        version = match.group(1)
-        return version
+        return utils.find_out_version_from_image(docker_client, image_name, self.name(), command, regex)
 
     # pylint: disable=arguments-differ
     def _prepare_tarfile_release(self,
