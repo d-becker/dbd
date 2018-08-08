@@ -64,8 +64,8 @@ resource files need to be provided, too.
 Each component image builder must provide a python module that has the same name as the component - exactly the same
 character string that is specified as the component name in the _BuildConfiguration_ file - therefore, component names
 must be valid python module names. These modules are found by their names and loaded dynamically by the main
-application, so they need to be available on the python path. The easiest way of achieving this is putting the source
-files in the same directory as the main application source.
+application, so they need to be available on the python path. The easiest way of achieving this is putting the component
+module source files in the same directory as the main application source.
 
 The component modules must contain a class called `ImageBuilder` that implements the
 `component_builder.ComponentImageBuilder` interface. This interface declares some abstract methods. The `dependencies`
