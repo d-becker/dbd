@@ -30,6 +30,17 @@ class ComponentConfig:
                  dist_type: DistType,
                  version: str,
                  image_name: str) -> None:
+        """
+        Creates a new `ComponentConfig` object.
+
+        Args:
+            dist_type: The type of the distribution (release or snapshot).
+            version: The version number of the component in the image. It should be provided
+                irrespective of whether this is a release or a snapshot distribution.
+            image_name: The name of the docker image that was built with the component.
+
+        """
+
         self._dist_type = dist_type
         self._version = version
         self._image_name = image_name
@@ -68,6 +79,17 @@ class Configuration:
                  timestamp: str,
                  repository: str = None,
                  resource_path: Path = None) -> None:
+        """
+        Creates a new `Configuration` object.
+
+        Args:
+            name: The name of the BuildConfiguration (provided by the user).
+            timestamp: The timestamp of the build.
+            repository: The dockerhub repository to use when naming the images. Defaults to "dbd".
+            resource_path: The path to the directory where the resources of the components are stored.
+
+        """
+
         self._name = name
         self._timestamp = timestamp
         self._repository: str = "dbd" if repository is None else repository
