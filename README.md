@@ -46,3 +46,20 @@ example above, the directory name would be something like `oozie500hadoop265_153
 output directory that was specified on the command line. The directory contains - along with various other files - a
 `docker-compose.yaml` file. You can use [docker-compose](https://docs.docker.com/compose/) to run your dockerised
 cluster.
+
+## Running mypy, pylint and tests
+To run mypy, execute the following from the repository root:
+
+```
+mypy dbd
+```
+
+To run pylint, execute the following from the repository root:
+```
+pylint dbd
+```
+
+To run the tests, execute the following from the repository root:
+```
+python3 -m unittest discover -v -t dbd -s test
+```
