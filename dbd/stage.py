@@ -1,25 +1,56 @@
 #!/usr/bin/env python3
 
 from abc import ABCMeta, abstractmethod
-from typing import Dict, List, Optional
+from typing import List
 
 class Stage(metaclass=ABCMeta):
+    """
+    Classes implementing this interface represent a stage in a computational process.
+
+    `Stage` objects declare a precondition - if the precondition is true, it means that the stage can be executed and
+    will not fail. `Stage` objects are intended to be chained together in `StageChain` objects, where executing a stage
+    in the chain makes the precondition of the next stage true. In this way, the implicit postcondition of a stage is
+    the precondition of the next stage.
+
+    """
+
     @abstractmethod
     def name(self) -> str:
+        """
+        Returns the name of the stage.
+        """
         pass
 
     @abstractmethod
     def check_precondition(self) -> bool:
+        """
+        Checks whether the precondition of this stage is satisfied. This method should not have any side effects.
+
+        Returns:
+            True if the precondition is satisfied; False otherwise.
+
+        """
         pass
 
     @abstractmethod
     def execute(self) -> None:
+        """
+        Executes the stage.
+
+        This operation is allowed (but not required) to fail if the precondition is not satisfied. Otherwise, the
+        operation must not fail because of problems connected to the `StageChain` this `Stage` is a part of. Other kinds
+        of failures are possible.
+
+        The operation must not fail even in case the (implicit) postcondition is also true in addition to the
+        precondition, for example if `execute` is called multiple times and that does not make the precondition false.
+
+        """
         pass
 
 class StageException(Exception):
     pass
 
-class StageExecutor:
+class StageChain:
     def __init__(self, stages: List[Stage]) -> None:
         # The first stage is executed first if there is no caching.
         self._stages = stages

@@ -142,7 +142,6 @@ class ComponentImageBuilder(metaclass=ABCMeta):
     def name(self) -> str:
         """
         Returns the name of the component for which the image is built.
-
         """
         pass
 
