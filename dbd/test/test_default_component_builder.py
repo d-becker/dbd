@@ -5,21 +5,22 @@
 import unittest
 
 import tempfile
-from typing import List, Optional
+from typing import cast, List, Optional
 from pathlib import Path
 
 from default_component_image_builder import DefaultComponentImageBuilder, StageListBuilder
 from default_component_image_builder import CreateCacheStage, CreateTarfileStage, Downloader, DownloadFileStage
 from stage import Stage
 
-class TestCreateCacheStage(unittest.TestCase):
+class TmpDirTestCase(unittest.TestCase):
     def setUp(self) -> None:
         self._tmp_dir = tempfile.TemporaryDirectory()
         self._tmp_dir_path = Path(self._tmp_dir.name)
 
     def tearDown(self) -> None:
         self._tmp_dir.cleanup()
-    
+
+class TestCreateCacheStage(TmpDirTestCase):
     def test_check_precondition_returns_false_when_parent_dir_does_not_exist(self) -> None:
         parent_dir = self._tmp_dir_path / "non/existent/directory/"
         self.assertFalse(parent_dir.exists())
@@ -63,23 +64,16 @@ class TestCreateCacheStage(unittest.TestCase):
 
         file_in_cache = cache_dir / "file"
         file_in_cache.touch()
-        
+
         stage = CreateCacheStage(parent_dir)
 
         self.assertTrue(stage.check_precondition())
         stage.execute()
-        
+
         self.assertTrue(cache_dir.exists())
         self.assertTrue(file_in_cache.exists())
-            
-class TestCreateTarfileStage(unittest.TestCase):
-    def setUp(self) -> None:
-        self._tmp_dir = tempfile.TemporaryDirectory()
-        self._tmp_dir_path = Path(self._tmp_dir.name)
 
-    def tearDown(self) -> None:
-        self._tmp_dir.cleanup()
-        
+class TestCreateTarfileStage(TmpDirTestCase):
     def test_check_precondition_returns_false_when_source_dir_does_not_exist(self) -> None:
         source_dir = self._tmp_dir_path / "non/existent/directory/"
         self.assertFalse(source_dir.exists())
@@ -160,7 +154,7 @@ class TestCreateTarfileStage(unittest.TestCase):
 
         self.assertTrue(dest_path.exists())
 
-class TestDownloadFileStage(unittest.TestCase):
+class TestDownloadFileStage(TmpDirTestCase):
     class MockDownloader(Downloader):
         def __init__(self) -> None:
             self._url: Optional[str] = None
@@ -175,14 +169,7 @@ class TestDownloadFileStage(unittest.TestCase):
 
         def get_dest_path(self) -> Optional[Path]:
             return self._dest_path
-    
-    def setUp(self) -> None:
-        self._tmp_dir = tempfile.TemporaryDirectory()
-        self._tmp_dir_path = Path(self._tmp_dir.name)
 
-    def tearDown(self) -> None:
-        self._tmp_dir.cleanup()
-        
     def test_check_precondition_returns_false_when_dest_path_prefix_does_not_exist(self) -> None:
         dest_path = self._tmp_dir_path / "non/existent/directory/file.tar.gz"
         self.assertFalse(dest_path.parent.exists())
@@ -230,4 +217,14 @@ class TestDownloadFileStage(unittest.TestCase):
         stage.execute()
 
         self.assertEqual(url, downloader.get_url())
-        self.assertEqual(dest_path.expanduser().resolve(), downloader.get_dest_path().expanduser().resolve())
+
+        called_dest_path_opt: Optional[Path] = downloader.get_dest_path()
+        self.assertFalse(called_dest_path_opt is None)
+
+        # It is safe to cast as we have just checked if it is None. This is needed by the typechecker.
+        called_dest_path: Path = cast(Path, called_dest_path_opt)
+        self.assertEqual(dest_path.expanduser().resolve(), called_dest_path.expanduser().resolve())
+
+class TestBuildDockerImageStage(TmpDirTestCase):
+    def test_test(self) -> None:
+        self.assertFalse(True)
