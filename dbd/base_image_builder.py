@@ -11,6 +11,8 @@ import wget
 from component_builder import DistType, ComponentConfig, ComponentImageBuilder, Configuration
 import utils
 
+# TODO: remove this file
+
 class BaseImageBuilder(ComponentImageBuilder):
     def __init__(self,
                  component_name: str,
