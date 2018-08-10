@@ -135,19 +135,36 @@ class BuildDockerImageStage(Stage):
     def __init__(self,
                  docker_client: docker.DockerClient,
                  image_name: str,
-                 built_config: Configuration) -> None:
+                 dependency_images: Dict[str, str],
+                 build_directory: Path,
+                 file_dependencies: List[str]) -> None:
         self._docker_client = docker_client
         self._image_name = image_name
-        self._build_config = built_config
+        self._dependency_images = dependency_images
+        self._build_directory = build_directory
+        self._file_dependencies = file_dependencies
 
     def name(self) -> str:
         return "build_docker_image"
 
     def check_precondition(self) -> bool:
-        return False
+        if not self._build_directory.is_dir():
+            return False
+
+        for dep_file in self._file_dependencies:
+            if not (self._build_directory / dep_file).exists():
+                return False
+
+        return True
 
     def execute(self) -> None:
-        pass
+        buildargs = {"{}_IMAGE".format(component.upper()) : image
+                     for (component, image) in self._dependency_images.items()}
+
+        self._docker_client.images.build(path=str(self._build_directory),
+                                         buildargs=buildargs,
+                                         tag=self._image_name,
+                                         rm=True)
 
 class StageListBuilder(metaclass=ABCMeta):
     """

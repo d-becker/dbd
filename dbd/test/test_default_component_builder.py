@@ -5,11 +5,13 @@
 import unittest
 
 import tempfile
-from typing import cast, List, Optional
+from typing import cast, Any, Dict, List, Optional
 from pathlib import Path
 
+import docker
+
 from default_component_image_builder import DefaultComponentImageBuilder, StageListBuilder
-from default_component_image_builder import CreateCacheStage, CreateTarfileStage, Downloader, DownloadFileStage
+from default_component_image_builder import BuildDockerImageStage, CreateCacheStage, CreateTarfileStage, Downloader, DownloadFileStage
 from stage import Stage
 
 class TmpDirTestCase(unittest.TestCase):
@@ -226,5 +228,110 @@ class TestDownloadFileStage(TmpDirTestCase):
         self.assertEqual(dest_path.expanduser().resolve(), called_dest_path.expanduser().resolve())
 
 class TestBuildDockerImageStage(TmpDirTestCase):
-    def test_test(self) -> None:
-        self.assertFalse(True)
+    class MockDockerClient:
+        class Images:
+            def build(self, **kwargs: Dict[Any, Any]) -> None:
+                self.called_args = kwargs
+        
+        def __init__(self) -> None:
+            self.images = TestBuildDockerImageStage.MockDockerClient.Images()
+        
+
+    def test_check_precondition_returns_false_when_build_directory_does_not_exist(self) -> None:
+        docker_client = TestBuildDockerImageStage.MockDockerClient()
+        
+        build_directory = self._tmp_dir_path / "non/existent/directory"
+        self.assertFalse(build_directory.exists())
+
+        image_name = "some_image_name"
+        dependency_images: Dict[str, str] = {}
+        file_dependencies: List[str] = []
+        
+        stage = BuildDockerImageStage(docker_client, image_name, dependency_images, build_directory, file_dependencies)
+
+        result = stage.check_precondition()
+        self.assertFalse(result)
+
+    def test_check_precondition_returns_false_when_build_directory_is_not_a_directory(self) -> None:
+        docker_client = TestBuildDockerImageStage.MockDockerClient()
+        
+        build_directory = self._tmp_dir_path / "file"
+        build_directory.touch()
+        self.assertTrue(build_directory.exists())
+        self.assertFalse(build_directory.is_dir())
+
+        image_name = "some_image_name"
+        dependency_images: Dict[str, str] = {}
+        file_dependencies: List[str] = []
+
+        # TODO: Check why mypy doesn't catch passing the mock docker client as that is not of the correct type.
+        stage = BuildDockerImageStage(docker_client, image_name, dependency_images, build_directory, file_dependencies)
+
+        result = stage.check_precondition()
+        self.assertFalse(result)
+
+    def test_check_precondition_returns_false_when_some_file_dependencies_do_not_exist(self) -> None:
+        docker_client = TestBuildDockerImageStage.MockDockerClient()
+        
+        build_directory = self._tmp_dir_path / "directory"
+        build_directory.mkdir()
+        self.assertTrue(build_directory.is_dir())
+
+        image_name = "some_image_name"
+        dependency_images: Dict[str, str] = {}
+        
+        file_dependencies: List[str] = ["some_file.txt", "another_file.tar.gz"]
+        (build_directory / file_dependencies[0]).touch()
+
+        stage = BuildDockerImageStage(docker_client, image_name, dependency_images, build_directory, file_dependencies)
+
+        result = stage.check_precondition()
+        self.assertFalse(result)
+
+    def test_check_precondition_returns_true_when_all_is_ok(self) -> None:
+        docker_client = TestBuildDockerImageStage.MockDockerClient()
+        
+        build_directory = self._tmp_dir_path / "directory"
+        build_directory.mkdir()
+        self.assertTrue(build_directory.is_dir())
+
+        image_name = "some_image_name"
+        dependency_images: Dict[str, str] = {}
+        
+        file_dependencies: List[str] = ["some_file.txt", "another_file.tar.gz"]
+        for file_dependency in file_dependencies:
+            (build_directory / file_dependency).touch()
+
+        stage = BuildDockerImageStage(docker_client, image_name, dependency_images, build_directory, file_dependencies)
+
+        result = stage.check_precondition()
+        self.assertTrue(result)
+
+    def test_execute_calls_docker_client_with_correct_arguments(self) -> None:
+        docker_client = TestBuildDockerImageStage.MockDockerClient()
+        
+        build_directory = self._tmp_dir_path / "directory"
+        build_directory.mkdir()
+        self.assertTrue(build_directory.is_dir())
+
+        image_name = "some_image_name"
+        dependency_images: Dict[str, str] = {"component_a": "component_a_image_name",
+                                             "component_b": "component_b_image_name"}
+        
+        file_dependencies: List[str] = []
+
+        stage = BuildDockerImageStage(docker_client, image_name, dependency_images, build_directory, file_dependencies)
+
+        self.assertTrue(stage.check_precondition())
+
+        stage.execute()
+
+        called_args = docker_client.images.called_args
+        
+        self.assertEqual(str(build_directory), called_args["path"])
+        self.assertEqual(image_name, called_args["tag"])
+        self.assertTrue(called_args["rm"])
+
+        expected_buildargs = {"{}_IMAGE".format(component_name.upper()) : image_name
+                              for (component_name, image_name) in dependency_images.items()}
+        self.assertEqual(expected_buildargs, called_args["buildargs"])
