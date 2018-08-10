@@ -31,7 +31,7 @@ class TestStageChain(unittest.TestCase):
 
     def test_execute_in_order_correct_order(self) -> None:
         append_list: List[int] = []
-        stages = [ListAppenderStage(i, append_list) for i in range(TestStageChain.LIST_LENGTH)]
+        stages: List[Stage] = [ListAppenderStage(i, append_list) for i in range(TestStageChain.LIST_LENGTH)]
 
         stage_chain = StageChain(stages)
         stage_chain.execute_in_order()
@@ -41,8 +41,8 @@ class TestStageChain(unittest.TestCase):
 
     def test_execute_in_order_unmet_precondition_raises(self) -> None:
         append_list: List[int] = []
-        stages = [PreconditionCheckingListAppenderStage(i, append_list)
-                  for i in reversed(range(TestStageChain.LIST_LENGTH))]
+        stages: List[Stage] = [PreconditionCheckingListAppenderStage(i, append_list)
+                               for i in reversed(range(TestStageChain.LIST_LENGTH))]
 
         stage_chain = StageChain(stages)
 
@@ -57,8 +57,8 @@ class TestStageChain(unittest.TestCase):
     def test_execute_needed_correct_stages_executed(self) -> None:
         append_list = [i for i in range(int(TestStageChain.LIST_LENGTH / 2))]
 
-        stages = [PreconditionCheckingListAppenderStage(i, append_list)
-                  for i in range(TestStageChain.LIST_LENGTH)]
+        stages: List[Stage] = [PreconditionCheckingListAppenderStage(i, append_list)
+                               for i in range(TestStageChain.LIST_LENGTH)]
 
         stage_chain = StageChain(stages)
         stage_chain.execute_needed()
@@ -71,8 +71,8 @@ class TestStageChain(unittest.TestCase):
 
     def test_execute_needed_no_precondition_is_met(self) -> None:
         append_list: List[int] = []
-        stages = [PreconditionCheckingListAppenderStage(i, append_list)
-                  for i in range(1, TestStageChain.LIST_LENGTH + 1)]
+        stages: List[Stage] = [PreconditionCheckingListAppenderStage(i, append_list)
+                               for i in range(1, TestStageChain.LIST_LENGTH + 1)]
 
         stage_chain = StageChain(stages)
         with self.assertRaises(StageException):

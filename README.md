@@ -51,7 +51,7 @@ cluster.
 To run mypy, execute the following from the repository root:
 
 ```
-mypy dbd
+mypy -p dbd
 ```
 
 To run pylint, execute the following from the repository root:
