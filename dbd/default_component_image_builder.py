@@ -233,9 +233,9 @@ class StageListBuilder(metaclass=ABCMeta):
         pass
 
 class DefaultDownloader(Downloader):
-   def download(self, url: str, dest_path: Path) -> None:
-       wget.download(url, out=str(dest_path))
-    
+    def download(self, url: str, dest_path: Path) -> None:
+        wget.download(url, out=str(dest_path))
+
 class DefaultStageListBuilder(StageListBuilder):
     def build_stage_list(self,
                          docker_client: docker.DockerClient,
@@ -261,7 +261,7 @@ class DefaultStageListBuilder(StageListBuilder):
             ImageBuiltStage(docker_client, image_name)]
 
         return stage_list
-        
+
     def _create_cache_stage(self, resource_dir: Path) -> Stage:
         return CreateCacheStage(resource_dir)
 
@@ -270,7 +270,6 @@ class DefaultStageListBuilder(StageListBuilder):
                                  dist_type: DistType,
                                  argument: str,
                                  url_template: str) -> Stage:
-        archive_retrieval_stage: Stage
         if dist_type == DistType.RELEASE:
             downloader = DefaultDownloader()
             version = argument
@@ -335,7 +334,7 @@ class DefaultComponentImageBuilder(ComponentImageBuilder):
         image_name = self._get_image_name(dist_type,
                                           argument if dist_type == DistType.RELEASE else None,
                                           built_config)
-        
+
         stages = self._stage_list_builder.build_stage_list(self._docker_client,
                                                            self.name(),
                                                            image_name,
@@ -397,34 +396,34 @@ class DefaultComponentImageBuilder(ComponentImageBuilder):
 
 
 def dist_type_and_arg(component_config: Dict[str, str]) -> Tuple[DistType, str]:
+    """
+    Returns the distribution type (release or snapshot) and the corresponding argument
+    (version or path to snapshot buid) from a component configuration dictionary.
+
+    Args:
+        component_config: A dictionary containing information about a component.
+
+    Returns:
+        The distribution type (release or snapshot) and the corresponding argument (version or path to snapshot buid).
+
         """
-        Returns the distribution type (release or snapshot) and the corresponding argument
-        (version or path to snapshot buid) from a component configuration dictionary.
 
-        Args:
-            component_config: A dictionary containing information about a component.
+    release_specified = "release" in component_config
+    snapshot_specified = "snapshot" in component_config
 
-        Returns:
-            The distribution type (release or snapshot) and the corresponding argument (version or path to snapshot buid).
+    if release_specified and snapshot_specified:
+        raise ValueError("Both release and snapshot mode specified.")
 
-        """
+    if not release_specified and not snapshot_specified:
+        raise ValueError("None of release and snapshot mode specified.")
 
-        release_specified = "release" in component_config
-        snapshot_specified = "snapshot" in component_config
-
-        if release_specified and snapshot_specified:
-            raise ValueError("Both release and snapshot mode specified.")
-
-        if not release_specified and not snapshot_specified:
-            raise ValueError("None of release and snapshot mode specified.")
-
-        # pylint: disable=no-else-return
-        if release_specified:
-            version = component_config["release"]
-            return (DistType.RELEASE, version)
-        else:
-            path = component_config["snapshot"]
-            return (DistType.SNAPSHOT, path)
+    # pylint: disable=no-else-return
+    if release_specified:
+        version = component_config["release"]
+        return (DistType.RELEASE, version)
+    else:
+        path = component_config["snapshot"]
+        return (DistType.SNAPSHOT, path)
 
 def find_out_version_from_image(docker_client: docker.DockerClient,
                                 image_name: str,
