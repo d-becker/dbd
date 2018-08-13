@@ -11,7 +11,8 @@ ENV CONF_DIR /opt/hadoop/etc/hadoop
 ENV PATH $PATH:/opt/hadoop/bin
 ENV JAVA_OPTS_VAR HADOOP_OPTS
 
-COPY tmp/hadoop.tar.gz /opt
+ARG GENERATED_DIR=generated
+COPY ${GENERATED_DIR}/hadoop.tar.gz /opt
 RUN tar zxf hadoop.tar.gz && rm hadoop.tar.gz && mv hadoop* hadoop && rm -rf /opt/hadoop/share/doc
 RUN mv /opt/hadoop/etc/hadoop /opt/hadoop/etc/hadoop.orig && mkdir -p /opt/hadoop/etc/hadoop && chmod 775 /opt/hadoop/etc/hadoop
 WORKDIR /opt/hadoop

@@ -21,6 +21,19 @@ class DistType(Enum):
     RELEASE = auto()
     SNAPSHOT = auto()
 
+class DistInfo:
+    def __init__(self, dist_type: DistType, argument: str) -> None:
+        self._dist_type = dist_type
+        self._argument = argument
+
+    @property
+    def dist_type(self) -> DistType:
+        return self._dist_type
+
+    @property
+    def argument(self) -> str:
+        return self._argument
+
 class ComponentConfig:
     """
     A class that contains information about a built docker image with a component.

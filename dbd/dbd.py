@@ -6,6 +6,7 @@ The main module of the application containing the entry point.
 
 import argparse
 import importlib
+import logging
 import time
 
 from pathlib import Path
@@ -53,16 +54,30 @@ def _get_force_rebuild_components(args: argparse.Namespace, components: List[str
 def _get_components(conf: Dict[str, Any]) -> List[str]:
     return list(conf["components"].keys())
 
-def _get_component_image_builders(components: List[str]) -> Dict[str, ComponentImageBuilder]:
+def _get_component_image_builders(components: List[str],
+                                  dependencies: Dict[str, List[str]],
+                                  cache_dir: Path) -> Dict[str, ComponentImageBuilder]:
     modules = map(importlib.import_module, components)
-    image_builders = map(lambda module: module.__dict__["ImageBuilder"](), modules)
+    image_builders = map(lambda module: module.__dict__["get_image_builder"](dependencies[module.__name__], cache_dir),
+                         modules)
 
     return dict(zip(components, image_builders))
 
-def _get_component_dependencies(image_builders: Dict[str, ComponentImageBuilder]) -> Dict[str, List[str]]:
-    items = [(component_name, image_builders[component_name].dependencies())
-             for component_name in image_builders.keys()]
-    return dict(items)
+def _read_dependencies_from_file(resource_path: Path, components: List[str], filename: str) -> Dict[str, List[str]]:
+    result: Dict[str, List[str]] = {}
+    for component in components:
+        dependencies_file = resource_path / component / filename
+        with dependencies_file.open() as file:
+            raw = file.read().split("\n")
+            without_whitespace = map(str.strip, raw)
+            without_empty = filter(lambda x: len(x) > 0, without_whitespace)
+            deps = list(without_empty)
+            result[component] = deps
+
+    return result
+
+def _get_component_dependencies(resource_path: Path, components: List[str]) -> Dict[str, List[str]]:
+    return _read_dependencies_from_file(resource_path, components, "dependencies.txt")
 
 def _get_initial_configuration(name: str) -> Configuration:
     timestamp: str = str(int(time.time()))
@@ -111,11 +126,9 @@ def main() -> None:
     name = input_conf["name"]
     components = _get_components(input_conf)
 
-    force_rebuild_components = _get_force_rebuild_components(args, components)
+    configuration = _get_initial_configuration(name)
 
-    image_builders = _get_component_image_builders(components)
-
-    dependencies = _get_component_dependencies(image_builders)
+    dependencies = _get_component_dependencies(configuration.resource_path, components)
 
     deps_without_config = _dependencies_without_configuration(components, dependencies)
     if len(deps_without_config) > 0:
@@ -126,6 +139,10 @@ def main() -> None:
     dag = graph.build_graph_from_dependencies(dependencies)
     topologically_sorted_components = dag.get_topologically_sorted_nodes()
 
+    cache_dir = Path(__main__.__file__).parent.resolve().parent / "cache"
+    image_builders = _get_component_image_builders(components, dependencies, cache_dir)
+
+    force_rebuild_components = _get_force_rebuild_components(args, components)
     output_configuration = _build_component_images(name,
                                                    topologically_sorted_components,
                                                    input_conf["components"],
@@ -135,4 +152,5 @@ def main() -> None:
     output.generate_output(topologically_sorted_components, output_configuration, Path(args.output_dir))
 
 if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO)
     main()

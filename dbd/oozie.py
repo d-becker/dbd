@@ -1,77 +1,145 @@
 #!/usr/bin/env python3
 
-"""
-This module contains the ImageBuilder for Oozie.
-"""
-
-import shutil
+from abc import ABCMeta, abstractmethod
+import logging
+from pathlib import Path
 import subprocess
 import tarfile
+import tempfile
+from typing import List, Optional
 
-from pathlib import Path
+from component_builder import ComponentImageBuilder, Configuration, DistInfo, DistType
+from default_component_image_builder.builder import (DefaultComponentImageBuilder,
+                                                     StageListBuilder)
+from default_component_image_builder.cache import Cache
+from default_component_image_builder.stage_list_builder import DefaultStageListBuilder
+from stage import Stage
 
-from component_builder import Configuration
-import base_image_builder
+class ShellCommandExecutor(metaclass=ABCMeta):
+    @abstractmethod
+    def run(self, command: List[str]) -> None:
+        pass
 
-class ImageBuilder(base_image_builder.BaseImageBuilder):
-    """
-    The ImageBuilder class for Oozie.
-    """
-
-    def __init__(self) -> None:
-        url_template = "https://archive.apache.org//dist/oozie/{0}/oozie-{0}.tar.gz"
-
-        version_command = "bin/oozied.sh start && bin/oozie version"
-        version_regex = "version: (.*)\n"
-
-        base_image_builder.BaseImageBuilder.__init__(self,
-                                                     "oozie",
-                                                     ["hadoop"],
-                                                     url_template,
-                                                     version_command,
-                                                     version_regex)
-
-    # pylint: disable=arguments-differ
-    def _prepare_tarfile_release(self,
-                                 oozie_version: str,
-                                 tmp_path: Path,
-                                 built_config: Configuration) -> None:
-        base_image_builder.BaseImageBuilder._prepare_tarfile_release(self, oozie_version, tmp_path, built_config)
-
-        out_path = tmp_path / "oozie.tar.gz"
-
-        print("Extracting the downloaded oozie tar file.")
-        with tarfile.open(out_path) as tar:
-            tar.extractall(path=tmp_path)
-
-        out_path.unlink()
-        oozie_dirs = list(tmp_path.glob("oozie*"))
-
-        if len(oozie_dirs) != 1:
-            raise ValueError("There should be exactly one oozie* directory.")
-
-        hadoop_version = built_config.components["hadoop"].version
-
-        oozie_dir = oozie_dirs[0]
-        script_file = oozie_dir / "bin" / "mkdistro.sh"
-        command = [str(script_file),
-                   "-Puber",
-                   "-Ptez",
-                   # "-Dhadoop.version={}".format(hadoop_version),
-                   "-DskipTests"]
-
-        # if oozie_version.split(".")[0] == "4":
-        #     command.append("-Phadoop-{}".format(hadoop_version.split(".")[0]))
-
-        ### TODO: Oozie cannot be built when specifying a Hadoop-3 version. ###
-
-        print("Building the Oozie distribution against Hadoop version {}.".format(hadoop_version))
-        print("Build command: {}.".format(" ".join(command)))
-
+class DefaultShellCommandExecutor(ShellCommandExecutor):
+    def run(self, command: List[str]) -> None:
         subprocess.run(command, check=True)
-        distro_file_path = oozie_dir / "distro/target/oozie-{}-distro.tar.gz".format(oozie_version)
-        new_oozie_distro_path = tmp_path / "oozie.tar.gz"
 
-        distro_file_path.rename(new_oozie_distro_path)
+class BuildOozieStage(Stage):
+    def __init__(self,
+                 release_archive: Path,
+                 dest_path: Path,
+                 shell_command_executor: ShellCommandExecutor) -> None:
+        self._release_archive = release_archive.expanduser().resolve()
+        self._dest_path = dest_path.expanduser().resolve()
+        self._shell_command_executor = shell_command_executor
 
-        shutil.rmtree(oozie_dir)
+    def name(self) -> str:
+        return "build_oozie"
+
+    def check_precondition(self) -> bool:
+        if not self._release_archive.exists():
+            logging.info("Stage {} precondition check: the release archive does not exist: {}."
+                         .format(self.name(), self._release_archive))
+            return False
+
+        return True
+
+    def execute(self) -> None:
+        logging.info("Stage {}: Extracting the downloaded Oozie tar file.".format(self.name()))
+
+        with tempfile.TemporaryDirectory() as tmp_dir_name:
+            tmp_dir = Path(tmp_dir_name)
+
+            with tarfile.open(self._release_archive) as tar:
+                tar.extractall(path=tmp_dir)
+
+                oozie_dirs = list(tmp_dir.glob("oozie*"))
+
+                if len(oozie_dirs) != 1:
+                    raise ValueError("There should be exactly one oozie* directory.")
+
+                oozie_dir = oozie_dirs[0]
+                script_file = oozie_dir / "bin" / "mkdistro.sh"
+                command = [str(script_file),
+                           "-Puber",
+                           "-Ptez",
+                           "-DskipTests"]
+
+                logging.info("Build command: {}.".format(" ".join(command)))
+
+                self._shell_command_executor.run(command)
+
+                distro_file_paths = list((oozie_dir / "distro" / "target").glob("oozie-*-distro.tar.gz"))
+
+                if len(distro_file_paths) != 1:
+                    raise ValueError("There should be exactly one oozie-*-distro.tar.gz directory.")
+
+                distro_file_path = distro_file_paths[0]
+                distro_file_path.rename(self._dest_path)
+
+class OozieStageListBuilder(StageListBuilder):
+    def __init__(self) -> None:
+        self._default_builder = DefaultStageListBuilder()
+
+    def build_stage_list(self,
+                         component_name: str,
+                         dependencies: List[str],
+                         url_template: str,
+                         image_name: str,
+                         dist_info: DistInfo,
+                         docker_context_dir: Path,
+                         cache: Cache,
+                         built_config: Configuration) -> List[Stage]:
+        default_stage_list = self._default_builder.build_stage_list(component_name,
+                                                                    dependencies,
+                                                                    url_template,
+                                                                    image_name,
+                                                                    dist_info,
+                                                                    docker_context_dir,
+                                                                    cache,
+                                                                    built_config)
+        download_stage_index = OozieStageListBuilder._get_download_stage_index(default_stage_list)
+
+        if download_stage_index is not None:
+            assert dist_info.dist_type == DistType.RELEASE
+
+            archive_path = cache.get_path("archive", dist_info.dist_type, component_name, dist_info.argument)
+            distro_path = cache.get_path("distro", dist_info.dist_type, component_name, dist_info.argument)
+
+            build_oozie_stage = BuildOozieStage(archive_path, distro_path, DefaultShellCommandExecutor())
+
+            default_stage_list.insert(download_stage_index, build_oozie_stage)
+        else:
+            assert dist_info.dist_type == DistType.SNAPSHOT
+
+        return default_stage_list
+
+    @staticmethod
+    def _get_download_stage_index(stage_list: List[Stage]) -> Optional[int]:
+        enumerated = enumerate(stage_list)
+        filtered = filter(lambda t: t[1].name() == "download_file", enumerated)
+
+        element = next(filtered, None)
+
+        if element is None:
+            return element
+
+        return element[0]
+
+def get_image_builder(dependencies: List[str], cache_dir: Path) -> ComponentImageBuilder:
+    url_template = "https://archive.apache.org//dist/oozie/{0}/oozie-{0}.tar.gz"
+    version_command = "bin/oozied.sh start && bin/oozie version"
+    version_regex = "version: (.*)\n"
+    stage_list_builder = OozieStageListBuilder()
+
+    cache = Cache(cache_dir,
+                  {"archive" : Path("archive"),
+                   "distro" : Path("distro")})
+
+    return DefaultComponentImageBuilder("oozie",
+                                        dependencies,
+                                        url_template,
+                                        version_command,
+                                        version_regex,
+                                        cache,
+                                        stage_list_builder)

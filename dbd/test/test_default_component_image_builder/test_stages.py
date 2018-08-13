@@ -4,78 +4,16 @@
 
 import unittest
 
-import tempfile
 from typing import cast, Any, Dict, List, Optional
 from pathlib import Path
 
 import docker
 
-from default_component_image_builder import DefaultComponentImageBuilder, StageListBuilder
-from default_component_image_builder import (BuildDockerImageStage, CreateCacheStage,
-                                             CreateTarfileStage, Downloader,
-                                             DownloadFileStage, ImageBuiltStage)
-from stage import Stage
+from default_component_image_builder.stages import (BuildDockerImageStage,
+                                                    CreateTarfileStage, Downloader,
+                                                    DownloadFileStage, ImageBuiltStage)
 
-class TmpDirTestCase(unittest.TestCase):
-    def setUp(self) -> None:
-        self._tmp_dir = tempfile.TemporaryDirectory()
-        self._tmp_dir_path = Path(self._tmp_dir.name)
-
-    def tearDown(self) -> None:
-        self._tmp_dir.cleanup()
-
-class TestCreateCacheStage(TmpDirTestCase):
-    def test_check_precondition_returns_false_when_parent_dir_does_not_exist(self) -> None:
-        parent_dir = self._tmp_dir_path / "non/existent/directory/"
-        self.assertFalse(parent_dir.exists())
-
-        stage = CreateCacheStage(parent_dir)
-
-        result = stage.check_precondition()
-        self.assertFalse(result)
-
-    def test_check_precondition_returns_false_when_parent_dir_is_not_a_directory(self) -> None:
-        parent_dir = self._tmp_dir_path / "file"
-        parent_dir.touch()
-        self.assertTrue(parent_dir.exists())
-
-        stage = CreateCacheStage(parent_dir)
-
-        result = stage.check_precondition()
-        self.assertFalse(result)
-
-    def test_check_precondition_returns_true_when_parent_dir_exists(self) -> None:
-        parent_dir = self._tmp_dir_path
-        stage = CreateCacheStage(parent_dir)
-
-        result = stage.check_precondition()
-        self.assertTrue(result)
-
-    def test_execute_creates_cache_directory(self) -> None:
-        parent_dir = self._tmp_dir_path
-        stage = CreateCacheStage(parent_dir)
-
-        self.assertTrue(stage.check_precondition())
-        stage.execute()
-        cache_dir = parent_dir / "cache"
-        self.assertTrue(cache_dir.exists())
-
-    def test_execute_does_nothing_if_cache_directory_already_exists(self) -> None:
-        parent_dir = self._tmp_dir_path
-
-        cache_dir = parent_dir / "cache"
-        cache_dir.mkdir()
-
-        file_in_cache = cache_dir / "file"
-        file_in_cache.touch()
-
-        stage = CreateCacheStage(parent_dir)
-
-        self.assertTrue(stage.check_precondition())
-        stage.execute()
-
-        self.assertTrue(cache_dir.exists())
-        self.assertTrue(file_in_cache.exists())
+from test.temp_dir_test_case import TmpDirTestCase
 
 class TestCreateTarfileStage(TmpDirTestCase):
     def test_check_precondition_returns_false_when_source_dir_does_not_exist(self) -> None:
@@ -103,7 +41,7 @@ class TestCreateTarfileStage(TmpDirTestCase):
         result = stage.check_precondition()
         self.assertFalse(result)
 
-    def test_check_precondition_returns_false_when_dest_path_prefix_does_not_exist(self) -> None:
+    def test_check_precondition_returns_true_when_dest_path_prefix_does_not_exist(self) -> None:
         source_dir = self._tmp_dir_path / "source"
         source_dir.mkdir()
         self.assertTrue(source_dir.exists())
@@ -114,22 +52,7 @@ class TestCreateTarfileStage(TmpDirTestCase):
         stage = CreateTarfileStage(source_dir, dest_path)
 
         result = stage.check_precondition()
-        self.assertFalse(result)
-
-    def test_check_precondition_returns_false_when_dest_path_prefix_is_not_a_directory(self) -> None:
-        source_dir = self._tmp_dir_path / "source"
-        source_dir.mkdir()
-        self.assertTrue(source_dir.exists())
-
-        dest_path = self._tmp_dir_path / "dest/file.tar.gz"
-        dest_path.parent.touch()
-        self.assertTrue(dest_path.parent.exists())
-        self.assertFalse(dest_path.parent.is_dir())
-
-        stage = CreateTarfileStage(source_dir, dest_path)
-
-        result = stage.check_precondition()
-        self.assertFalse(result)
+        self.assertTrue(result)
 
     def test_check_precondition_returns_true_when_all_is_ok(self) -> None:
         source_dir = self._tmp_dir_path / "source"
@@ -158,6 +81,21 @@ class TestCreateTarfileStage(TmpDirTestCase):
 
         self.assertTrue(dest_path.exists())
 
+    def test_execute_creates_missing_parents(self) -> None:
+        source_dir = self._tmp_dir_path / "source"
+        source_dir.mkdir()
+        self.assertTrue(source_dir.exists())
+
+        dest_path = self._tmp_dir_path / "non/existent/directory/file.tar.gz"
+        self.assertFalse(dest_path.parent.exists())
+
+        stage = CreateTarfileStage(source_dir, dest_path)
+
+        self.assertTrue(stage.check_precondition())
+        stage.execute()
+
+        self.assertTrue(dest_path.exists())
+
 class TestDownloadFileStage(TmpDirTestCase):
     class MockDownloader(Downloader):
         def __init__(self) -> None:
@@ -167,47 +105,13 @@ class TestDownloadFileStage(TmpDirTestCase):
         def download(self, url: str, dest_path: Path) -> None:
             self._url = url
             self._dest_path = dest_path
+            dest_path.touch()
 
         def get_url(self) -> Optional[str]:
             return self._url
 
         def get_dest_path(self) -> Optional[Path]:
             return self._dest_path
-
-    def test_check_precondition_returns_false_when_dest_path_prefix_does_not_exist(self) -> None:
-        dest_path = self._tmp_dir_path / "non/existent/directory/file.tar.gz"
-        self.assertFalse(dest_path.parent.exists())
-
-        downloader = TestDownloadFileStage.MockDownloader()
-        url = "www.something.com"
-        stage = DownloadFileStage(downloader, url, dest_path)
-
-        result = stage.check_precondition()
-        self.assertFalse(result)
-
-    def test_check_precondition_returns_false_when_dest_path_prefix_is_not_a_directory(self) -> None:
-        dest_path = self._tmp_dir_path / "dest/file.tar.gz"
-        dest_path.parent.touch()
-        self.assertTrue(dest_path.parent.exists())
-        self.assertFalse(dest_path.parent.is_dir())
-
-        downloader = TestDownloadFileStage.MockDownloader()
-        url = "www.something.com"
-        stage = DownloadFileStage(downloader, url, dest_path)
-
-        result = stage.check_precondition()
-        self.assertFalse(result)
-
-    def test_check_precondition_returns_true_when_dest_path_prefix_exists(self) -> None:
-        dest_path = self._tmp_dir_path / "file.tar.gz"
-        self.assertTrue(dest_path.parent.exists())
-
-        downloader = TestDownloadFileStage.MockDownloader()
-        url = "www.something.com"
-        stage = DownloadFileStage(downloader, url, dest_path)
-
-        result = stage.check_precondition()
-        self.assertTrue(result)
 
     def test_execute_calls_downloader_with_correct_arguments(self) -> None:
         dest_path = self._tmp_dir_path / "file.tar.gz"
@@ -229,16 +133,35 @@ class TestDownloadFileStage(TmpDirTestCase):
         called_dest_path: Path = cast(Path, called_dest_path_opt)
         self.assertEqual(dest_path.expanduser().resolve(), called_dest_path.expanduser().resolve())
 
+    def test_execute_creates_missing_parents(self) -> None:
+        dest_path = self._tmp_dir_path / "some/directory/file.tar.gz"
+        self.assertFalse(dest_path.parent.exists())
+
+        downloader = TestDownloadFileStage.MockDownloader()
+        url = "www.something.com"
+        stage = DownloadFileStage(downloader, url, dest_path)
+
+        stage.execute()
+
+        self.assertTrue(dest_path.exists())
+
 # The type checker (mypy) cannot handle the docker module, therefore it won't typecheck whether we pass a real
 # docker.DockerClient object to methods. Therefore we don't need to wrap it in an interface.
 class MockDockerClient:
     class Images:
         def __init__(self) -> None:
             self.called_args: Dict[Any, Any] = {}
+            self.files_in_context: List[Path] = []
             self._images: List[str] = []
 
         def build(self, **kwargs: Dict[Any, Any]) -> None:
             self.called_args = kwargs
+
+            if not isinstance(self.called_args["path"], str):
+                raise ValueError("The path should be a string.")
+
+            path = Path(self.called_args["path"])
+            self.files_in_context = list(path.glob("**/*"))
 
         def get(self, image_name: str) -> None:
             if image_name not in self._images:
@@ -255,14 +178,14 @@ class TestBuildDockerImageStage(TmpDirTestCase):
     def test_check_precondition_returns_false_when_build_directory_does_not_exist(self) -> None:
         docker_client = MockDockerClient()
 
-        build_directory = self._tmp_dir_path / "non/existent/directory"
-        self.assertFalse(build_directory.exists())
+        build_context = self._tmp_dir_path / "non/existent/directory"
+        self.assertFalse(build_context.exists())
 
         image_name = "some_image_name"
         dependency_images: Dict[str, str] = {}
-        file_dependencies: List[str] = []
+        file_dependencies: List[Path] = []
 
-        stage = BuildDockerImageStage(docker_client, image_name, dependency_images, build_directory, file_dependencies)
+        stage = BuildDockerImageStage(docker_client, image_name, dependency_images, build_context, file_dependencies)
 
         result = stage.check_precondition()
         self.assertFalse(result)
@@ -270,16 +193,16 @@ class TestBuildDockerImageStage(TmpDirTestCase):
     def test_check_precondition_returns_false_when_build_directory_is_not_a_directory(self) -> None:
         docker_client = MockDockerClient()
 
-        build_directory = self._tmp_dir_path / "file"
-        build_directory.touch()
-        self.assertTrue(build_directory.exists())
-        self.assertFalse(build_directory.is_dir())
+        build_context = self._tmp_dir_path / "file"
+        build_context.touch()
+        self.assertTrue(build_context.exists())
+        self.assertFalse(build_context.is_dir())
 
         image_name = "some_image_name"
         dependency_images: Dict[str, str] = {}
-        file_dependencies: List[str] = []
+        file_dependencies: List[Path] = []
 
-        stage = BuildDockerImageStage(docker_client, image_name, dependency_images, build_directory, file_dependencies)
+        stage = BuildDockerImageStage(docker_client, image_name, dependency_images, build_context, file_dependencies)
 
         result = stage.check_precondition()
         self.assertFalse(result)
@@ -287,17 +210,18 @@ class TestBuildDockerImageStage(TmpDirTestCase):
     def test_check_precondition_returns_false_when_some_file_dependencies_do_not_exist(self) -> None:
         docker_client = MockDockerClient()
 
-        build_directory = self._tmp_dir_path / "directory"
-        build_directory.mkdir()
-        self.assertTrue(build_directory.is_dir())
+        build_context = self._tmp_dir_path / "directory"
+        build_context.mkdir()
+        self.assertTrue(build_context.is_dir())
 
         image_name = "some_image_name"
         dependency_images: Dict[str, str] = {}
 
-        file_dependencies: List[str] = ["some_file.txt", "another_file.tar.gz"]
-        (build_directory / file_dependencies[0]).touch()
+        file_dependencies: List[Path] = [build_context / "some_file.txt",
+                                         build_context / "another_file.tar.gz"]
+        file_dependencies[0].touch()
 
-        stage = BuildDockerImageStage(docker_client, image_name, dependency_images, build_directory, file_dependencies)
+        stage = BuildDockerImageStage(docker_client, image_name, dependency_images, build_context, file_dependencies)
 
         result = stage.check_precondition()
         self.assertFalse(result)
@@ -305,36 +229,50 @@ class TestBuildDockerImageStage(TmpDirTestCase):
     def test_check_precondition_returns_true_when_all_is_ok(self) -> None:
         docker_client = MockDockerClient()
 
-        build_directory = self._tmp_dir_path / "directory"
-        build_directory.mkdir()
-        self.assertTrue(build_directory.is_dir())
+        build_context = self._tmp_dir_path / "directory"
+        build_context.mkdir()
+        self.assertTrue(build_context.is_dir())
 
         image_name = "some_image_name"
         dependency_images: Dict[str, str] = {}
 
-        file_dependencies: List[str] = ["some_file.txt", "another_file.tar.gz"]
+        file_dependencies: List[Path] = [build_context / "some_file.txt",
+                                         build_context / "another_file.tar.gz"]
         for file_dependency in file_dependencies:
-            (build_directory / file_dependency).touch()
+            file_dependency.touch()
 
-        stage = BuildDockerImageStage(docker_client, image_name, dependency_images, build_directory, file_dependencies)
+        stage = BuildDockerImageStage(docker_client, image_name, dependency_images, build_context, file_dependencies)
 
         result = stage.check_precondition()
         self.assertTrue(result)
 
+    @staticmethod
+    def _populate_dir(directory: Path, files: List[Path]) -> None:
+        for file in files:
+            (directory / file).touch()
+
     def test_execute_calls_docker_client_with_correct_arguments(self) -> None:
         docker_client = MockDockerClient()
 
-        build_directory = self._tmp_dir_path / "directory"
-        build_directory.mkdir()
-        self.assertTrue(build_directory.is_dir())
+        static_build_context = self._tmp_dir_path / "docker_context"
+        static_build_context.mkdir()
+        files_in_static_build_context = [Path("Dockerfile"), Path("file.tar.gz")]
+        TestBuildDockerImageStage._populate_dir(static_build_context, files_in_static_build_context)
 
         image_name = "some_image_name"
         dependency_images: Dict[str, str] = {"component_a": "component_a_image_name",
                                              "component_b": "component_b_image_name"}
 
-        file_dependencies: List[str] = []
+        generated_dir = self._tmp_dir_path / "generated"
+        generated_dir.mkdir()
+        file_dependencies: List[Path] = [Path("file_dep1.txt"), Path("file_dep2.txt")]
+        TestBuildDockerImageStage._populate_dir(generated_dir, file_dependencies)
 
-        stage = BuildDockerImageStage(docker_client, image_name, dependency_images, build_directory, file_dependencies)
+        stage = BuildDockerImageStage(docker_client,
+                                      image_name,
+                                      dependency_images,
+                                      static_build_context,
+                                      list(map(lambda p: generated_dir / p, file_dependencies)))
 
         self.assertTrue(stage.check_precondition())
 
@@ -342,13 +280,22 @@ class TestBuildDockerImageStage(TmpDirTestCase):
 
         called_args = docker_client.images.called_args
 
-        self.assertEqual(str(build_directory), called_args["path"])
         self.assertEqual(image_name, called_args["tag"])
         self.assertTrue(called_args["rm"])
 
         expected_buildargs = {"{}_IMAGE".format(component_name.upper()) : image_name
                               for (component_name, image_name) in dependency_images.items()}
+        expected_buildargs["GENERATED_DIR"] = "generated"
         self.assertEqual(expected_buildargs, called_args["buildargs"])
+
+        real_context = Path(called_args["path"])
+        files_in_real_context: List[Path] = docker_client.images.files_in_context
+
+        # TODO: make it more readable.
+        self.assertTrue(all(map(lambda p: (real_context / p) in files_in_real_context,
+                                files_in_static_build_context)))
+        self.assertTrue(all(map(lambda p: (real_context / "generated" / p) in files_in_real_context,
+                                file_dependencies)))
 
 class TestImageBuiltStage(unittest.TestCase):
     def test_check_precondition_returns_false_when_image_does_not_exist(self) -> None:

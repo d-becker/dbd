@@ -1,25 +1,27 @@
 #!/usr/bin/env python3
 
-"""
-This module contains the ImageBuilder for Hadoop.
-"""
+from typing import List
+from pathlib import Path
 
-import base_image_builder
+import component_builder
+from default_component_image_builder.builder import DefaultComponentImageBuilder
+from default_component_image_builder.cache import Cache
+from default_component_image_builder.stage_list_builder import DefaultStageListBuilder
 
-class ImageBuilder(base_image_builder.BaseImageBuilder):
-    """
-    The ImageBuilder class for Hadoop.
-    """
+def get_image_builder(dependencies: List[str], cache_dir: Path) -> component_builder.ComponentImageBuilder:
+    url_template = "https://www-eu.apache.org/dist/hadoop/common/hadoop-{0}/hadoop-{0}.tar.gz"
+    version_command = "hadoop version"
+    version_regex = "\nHadoop (.*)\n"
 
-    def __init__(self) -> None:
-        url_template = "https://www-eu.apache.org/dist/hadoop/common/hadoop-{0}/hadoop-{0}.tar.gz"
+    cache = Cache(cache_dir,
+                  {"archive" : Path("archive")})
 
-        version_command = "hadoop version"
-        version_regex = "\nHadoop (.*)\n"
+    stage_list_builder = DefaultStageListBuilder()
 
-        base_image_builder.BaseImageBuilder.__init__(self,
-                                                     "hadoop",
-                                                     [],
-                                                     url_template,
-                                                     version_command,
-                                                     version_regex)
+    return DefaultComponentImageBuilder("hadoop",
+                                        dependencies,
+                                        url_template,
+                                        version_command,
+                                        version_regex,
+                                        cache,
+                                        stage_list_builder)

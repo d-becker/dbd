@@ -49,6 +49,7 @@ class TestStageChain(unittest.TestCase):
         with self.assertRaises(StageException):
             stage_chain.execute_in_order()
 
+    # pylint: disable=no-self-use
     def test_execute_in_order_empty_list_does_not_fail(self) -> None:
         stages: List[Stage] = []
         stage_chain = StageChain(stages)
@@ -78,6 +79,7 @@ class TestStageChain(unittest.TestCase):
         with self.assertRaises(StageException):
             stage_chain.execute_needed()
 
+    # pylint: disable=no-self-use
     def test_execute_needed_empty_list_does_not_fail(self) -> None:
         stages: List[Stage] = []
         stage_chain = StageChain(stages)
