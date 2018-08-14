@@ -75,6 +75,8 @@ class BuildOozieStage(Stage):
                     raise ValueError("There should be exactly one oozie-*-distro.tar.gz directory.")
 
                 distro_file_path = distro_file_paths[0]
+
+                self._dest_path.parent.mkdir(parents=True, exist_ok=True)
                 distro_file_path.rename(self._dest_path)
 
 class OozieStageListBuilder(StageListBuilder):
@@ -103,12 +105,17 @@ class OozieStageListBuilder(StageListBuilder):
         if download_stage_index is not None:
             assert dist_info.dist_type == DistType.RELEASE
 
-            archive_path = cache.get_path("archive", dist_info.dist_type, component_name, dist_info.argument)
-            distro_path = cache.get_path("distro", dist_info.dist_type, component_name, dist_info.argument)
+            archive_path = cache.get_path("archive", dist_info.dist_type, component_name, dist_info.argument) / "oozie.tar.gz"
+            distro_path = cache.get_path("distro", dist_info.dist_type, component_name, dist_info.argument) / "oozie.tar.gz"
 
             build_oozie_stage = BuildOozieStage(archive_path, distro_path, DefaultShellCommandExecutor())
 
-            default_stage_list.insert(download_stage_index, build_oozie_stage)
+            default_stage_list.insert(download_stage_index + 1, build_oozie_stage)
+
+            docker_stage_index = download_stage_index + 2
+            docker_stage = default_stage_list[docker_stage_index]
+            assert docker_stage.name() == "build_docker_image"
+            docker_stage._file_dependencies = [distro_path]
         else:
             assert dist_info.dist_type == DistType.SNAPSHOT
 

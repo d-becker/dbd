@@ -186,7 +186,7 @@ class BuildDockerImageStage(Stage):
             generated_dir_path = tmp_context / generated_dir_name
             generated_dir_path.mkdir()
             BuildDockerImageStage._copy_all(self._file_dependencies, generated_dir_path)
-
+            
             self._docker_client.images.build(path=str(tmp_context),
                                              buildargs=buildargs,
                                              tag=self._image_name,
