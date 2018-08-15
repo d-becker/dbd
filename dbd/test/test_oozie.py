@@ -16,18 +16,6 @@ class MockShellCommandExecutor(ShellCommandExecutor):
         pass
 
 class TestBuildOozieStage(TmpDirTestCase):
-    def test_check_precondition_returns_false_when_source_archive_does_not_exist(self) -> None:
-        source_archive = self._tmp_dir_path / "oozie.tar.gz"
-        self.assertFalse(source_archive.exists())
-
-        dest_path = self._tmp_dir_path / "oozie-d.tar.gz"
-
-        shell_command_executor = MockShellCommandExecutor()
-        stage = BuildOozieStage(source_archive, dest_path, shell_command_executor)
-
-        result = stage.check_precondition()
-        self.assertFalse(result)
-
     def test_execute_distro_archive_present_at_dest_path(self) -> None:
         source_archive = self._tmp_dir_path / "oozie.tar.gz"
         TestBuildOozieStage._create_archive(source_archive)
@@ -36,11 +24,9 @@ class TestBuildOozieStage(TmpDirTestCase):
         dest_path = self._tmp_dir_path / "oozie-disto.tar.gz"
 
         shell_command_executor = MockShellCommandExecutor()
-        stage = BuildOozieStage(source_archive, dest_path, shell_command_executor)
+        stage = BuildOozieStage(shell_command_executor)
 
-        self.assertTrue(stage.check_precondition())
-
-        stage.execute()
+        stage.execute(source_archive, dest_path)
 
         self.assertTrue(dest_path.exists())
 

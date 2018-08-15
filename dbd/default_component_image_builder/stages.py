@@ -8,58 +8,26 @@ import shutil
 import tarfile
 import tempfile
 
-from typing import Dict, Iterable, List
+from typing import Dict, Iterable
 
 import docker
-import wget
 
-from stage import Stage
+from default_component_image_builder.pipeline import EntryStage, FinalStage
 
-class CreateTarfileStage(Stage):
-    """
-    A stage that takes a directory and creates a tar archive from it.
-
-    Its precondition is that the source directory must exist.
-
-    If the target file already exists, it is overwritten.
-
-    If the destination directory does not exist, missing directories in the path are created.
-
-    """
-
-    def __init__(self, source_dir: Path, dest_path: Path) -> None:
-        """
-        Creates a `CreateTarfileStage` object.
-
-        Args:
-            source_dir: The directory that is to be archived.
-            dest_path: The path of the archive file to be created.
-        """
-
-        self._source_dir = source_dir.expanduser().resolve()
-        self._dest_path = dest_path.expanduser().resolve()
+class CreateTarfileStage(EntryStage):
+    def __init__(self, src_dir: Path) -> None:
+        self._src_dir = src_dir
 
     def name(self) -> str:
         return "create_tarfile"
 
-    def check_precondition(self) -> bool:
-        if not self._source_dir.is_dir():
-            logging.info("Stage %s precondition check: the source directory does not exist or is not a directory: %s.",
-                         self.name(),
-                         self._source_dir)
-            return False
-
-        return True
-
-    def execute(self) -> None:
-        logging.info("Stage %s: creating tar archive from %s as %s.",
+    def execute(self, output_path: Path) -> None:
+        logging.info("Stage %s: creating tar archive from %s.",
                      self.name(),
-                     self._source_dir,
-                     self._dest_path)
+                     self._src_dir)
 
-        self._dest_path.parent.mkdir(parents=True, exist_ok=True)
-        with tarfile.open(self._dest_path, "w:gz") as tar:
-            tar.add(str(self._source_dir), arcname=self._source_dir.name)
+        with tarfile.open(output_path, "w:gz") as tar:
+            tar.add(str(self._src_dir), arcname=self._src_dir.name)
 
 class Downloader(metaclass=ABCMeta):
     """
@@ -83,103 +51,38 @@ class DefaultDownloader(Downloader):
     def download(self, url: str, dest_path: Path) -> None:
         wget.download(url, out=str(dest_path))
 
-class DownloadFileStage(Stage):
-    """
-    A stage that downloads a file from a url.
-
-    It has no precondition.
-
-    If the target file already exists, it is overwritten.
-
-    If the destination directory does not exist, missing directories in the path are created.
-
-    If the url is invalid or downloading the file fails, the stage fails, too.
-
-    """
-
-    def __init__(self, downloader: Downloader, url: str, dest_path: Path) -> None:
-        """
-        Creates a `DownloadFileStage` object.
-
-        Args:
-            downloader: A `Downloader` object that will be used to download the file.
-            url: The url of the file to download.
-            dest_path: The path to which the file is to be downloaded.
-
-        """
-
+class DownloadFileStage(EntryStage):
+    def __init__(self, downloader: Downloader, url: str) -> None:
         self._downloader = downloader
         self._url = url
-        self._dest_path = dest_path.expanduser().resolve()
 
     def name(self) -> str:
         return "download_file"
 
-    def check_precondition(self) -> bool:
-        return True
-
-    def execute(self) -> None:
-        logging.info("Stage %s: downloading file from %s to %s.",
+    def execute(self, output_path: Path) -> None:
+        logging.info("Stage %s: downloading file from %s.",
                      self.name(),
-                     self._url,
-                     self._dest_path)
+                     self._url)
 
-        self._dest_path.parent.mkdir(parents=True, exist_ok=True)
-        self._downloader.download(self._url, self._dest_path)
+        self._downloader.download(self._url, output_path)
         print() # Printing a newline is needed because the wget downloader output does not end with one.
 
-class BuildDockerImageStage(Stage):
-    """
-    A stage that builds a docker image.
-
-    Its precondition is that the provided build directory and all of the provided file dependencies need to exist.
-    """
-
+class BuildDockerImageStage(FinalStage):
     def __init__(self,
                  docker_client: docker.DockerClient,
                  image_name: str,
                  dependency_images: Dict[str, str],
-                 build_context: Path,
-                 file_dependencies: List[Path]) -> None:
-        """
-        Created a `BuildDockerImageStage` object.
-
-        Args:
-            docker_client: The docker client object to use when building the image.
-            image_name: The name that the built docker image should have.
-            dependency_images: A dictionary where the names of the components that the current component
-                depends on are the keys and those components' docker images' names are the values.
-            build_context: The directory where the Dockerfile and the other static
-                resources that are not generated by the previous stages are located.
-            file_dependencies: A list of file paths to resource files generated by the previous stages.
-
-        """
+                 build_context: Path) -> None:
 
         self._docker_client = docker_client
         self._image_name = image_name
         self._dependency_images = dependency_images
         self._build_context = build_context
-        self._file_dependencies = file_dependencies
 
     def name(self) -> str:
         return "build_docker_image"
 
-    def check_precondition(self) -> bool:
-        if not self._build_context.is_dir():
-            logging.info("Stage %s: precondition check: the build directory is not an existing directory.",
-                         self.name())
-            return False
-
-        for generated_resource_file in self._file_dependencies:
-            if not generated_resource_file.exists():
-                logging.info("Stage %s precondition check: the generated resource file %s does not exist.",
-                             self.name(),
-                             generated_resource_file)
-                return False
-
-        return True
-
-    def execute(self) -> None:
+    def execute(self, input_path: Path) -> None:
         logging.info("Stage %s: building docker image %s.", self.name(), self._image_name)
 
         buildargs = {"{}_IMAGE".format(component.upper()) : image
@@ -194,7 +97,7 @@ class BuildDockerImageStage(Stage):
 
             generated_dir_path = tmp_context / generated_dir_name
             generated_dir_path.mkdir()
-            BuildDockerImageStage._copy_all(self._file_dependencies, generated_dir_path)
+            BuildDockerImageStage._copy_all([input_path], generated_dir_path) # TODO: Shutil.copy?
 
             self._docker_client.images.build(path=str(tmp_context),
                                              buildargs=buildargs,
@@ -208,25 +111,3 @@ class BuildDockerImageStage(Stage):
                 shutil.copytree(item, dst / item.name)
             else:
                 shutil.copy(item, dst)
-
-class ImageBuiltStage(Stage):
-    def __init__(self, docker_client: docker.DockerClient, image_name: str) -> None:
-        self._docker_client = docker_client
-        self._image_name = image_name
-
-    def name(self) -> str:
-        return "image_built"
-
-    def check_precondition(self) -> bool:
-        try:
-            self._docker_client.images.get(self._image_name)
-        except docker.errors.ImageNotFound:
-            logging.info("Stage %s precondition check: the docker image %s does not exist locally.",
-                         self.name(),
-                         self._image_name)
-            return False
-        else:
-            return True
-
-    def execute(self) -> None:
-        pass

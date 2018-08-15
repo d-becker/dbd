@@ -7,25 +7,25 @@ from pathlib import Path
 
 import re
 
-from typing import Dict, Iterable, List, Tuple
+from typing import Dict, Iterable, List, Tuple, Type, Union
 
 import docker
 
 from component_builder import ComponentConfig, ComponentImageBuilder, Configuration, DistType, DistInfo
 from default_component_image_builder.cache import Cache
-from default_component_image_builder.stage_list_builder import StageListBuilder
-from stage import StageChain
+from default_component_image_builder.pipeline import EntryStage, Stage
+from default_component_image_builder.pipeline_builder import PipelineBuilder
+from default_component_image_builder.pipeline_executor import PipelineExecutor
+from default_component_image_builder.stages import CreateTarfileStage, DownloadFileStage
+
+OutputStageType = Type[Union[EntryStage, Stage]]
+def default_cache_path_fragments() -> Dict[OutputStageType, Path]:
+    return {
+        DownloadFileStage : Path("archive"),
+        CreateTarfileStage : Path("archive"),
+    }
 
 class DefaultComponentImageBuilder(ComponentImageBuilder):
-    # TODO: Add more information to the docstring about how the images are built (using stages) and how it can be
-    # customised (for example by adding stages through providing a different stage_list_builder).
-
-    """
-    A class that implements the common functionality that is needed to implement the `ComponentImageBuilder`
-    interface. The constructor parameters make it possible to customise the behaviour to fit the actual component.
-
-    """
-
     def __init__(self,
                  component_name: str,
                  dependencies: List[str],
@@ -33,14 +33,14 @@ class DefaultComponentImageBuilder(ComponentImageBuilder):
                  version_command: str,
                  version_regex: str,
                  cache: Cache,
-                 stage_list_builder: StageListBuilder) -> None:
+                 pipeline_builder: PipelineBuilder) -> None:
         self._name = component_name
         self._dependencies = dependencies
         self._url_template = url_template # A string with {0} which will be formatted with the version.
         self._version_command = version_command
         self._version_regex = version_regex
         self._cache = cache
-        self._stage_list_builder = stage_list_builder
+        self._pipeline_builder = pipeline_builder
 
         self._docker_client = docker.from_env()
 
@@ -64,20 +64,23 @@ class DefaultComponentImageBuilder(ComponentImageBuilder):
 
         dependency_dict = {dependency : built_config.components[dependency]
                            for dependency in self.dependencies()}
-        stages = self._stage_list_builder.build_stage_list(self.name(),
-                                                           id_string,
-                                                           dependency_dict,
-                                                           self._url_template,
-                                                           image_name,
-                                                           dist_info,
-                                                           docker_context,
-                                                           self._cache)
-        stage_executor = StageChain(stages)
+
+        pipeline = self._pipeline_builder.build_pipeline(dependency_dict,
+                                                         self._url_template,
+                                                         image_name,
+                                                         dist_info,
+                                                         docker_context)
+        pipeline_executor = PipelineExecutor()
 
         if force_rebuild:
-            stage_executor.execute_in_order()
+            pipeline_executor.execute_all(self.name(),
+                                          dist_type,
+                                          id_string,
+                                          self._cache,
+                                          pipeline)
         else:
-            stage_executor.execute_needed()
+            # TODO: check if image exists locally and execute what is needed.
+            pass
 
         version: str
         if dist_type == DistType.RELEASE:
