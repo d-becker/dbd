@@ -7,7 +7,7 @@ from typing import Dict, List
 
 import docker
 
-from component_builder import ComponentConfig, Configuration, DistInfo, DistType
+from component_builder import ComponentConfig, DistInfo, DistType
 from default_component_image_builder.cache import Cache
 from default_component_image_builder.stages import (
     BuildDockerImageStage,
@@ -27,13 +27,12 @@ class StageListBuilder(metaclass=ABCMeta):
     def build_stage_list(self,
                          component_name: str,
                          id_string: str,
-                         dependencies: List[str],
+                         dependencies: Dict[str, ComponentConfig],
                          url_template: str,
                          image_name: str,
                          dist_info: DistInfo,
                          docker_context_dir: Path,
-                         cache: Cache,
-                         built_config: Configuration) -> List[Stage]:
+                         cache: Cache) -> List[Stage]:
         pass
 
 class DefaultStageListBuilder(StageListBuilder):
@@ -43,13 +42,12 @@ class DefaultStageListBuilder(StageListBuilder):
     def build_stage_list(self,
                          component_name: str,
                          id_string: str,
-                         dependencies: List[str],
+                         dependencies: Dict[str, ComponentConfig],
                          url_template: str,
                          image_name: str,
                          dist_info: DistInfo,
                          docker_context_dir: Path,
-                         cache: Cache,
-                         built_config: Configuration) -> List[Stage]:
+                         cache: Cache) -> List[Stage]:
         archive_dest_path = cache.get_path("archive",
                                            dist_info.dist_type,
                                            component_name,
@@ -64,7 +62,6 @@ class DefaultStageListBuilder(StageListBuilder):
             self._build_docker_image_stage(image_name,
                                            docker_context_dir,
                                            dependencies,
-                                           built_config.components,
                                            file_deps),
             ImageBuiltStage(self._docker_client, image_name)]
 
@@ -74,7 +71,6 @@ class DefaultStageListBuilder(StageListBuilder):
     def _archive_retrieval_stage(archive_dest_path: Path,
                                  dist_info: DistInfo,
                                  url_template: str) -> Stage:
-
         # pylint: disable=no-else-return
         if dist_info.dist_type == DistType.RELEASE:
             downloader = DefaultDownloader()
@@ -90,10 +86,9 @@ class DefaultStageListBuilder(StageListBuilder):
     def _build_docker_image_stage(self,
                                   image_name: str,
                                   build_directory: Path,
-                                  dependencies: List[str],
-                                  component_configs: Dict[str, ComponentConfig],
+                                  dependencies: Dict[str, ComponentConfig],
                                   file_dependencies: List[Path]) -> Stage:
-        dependency_images = {dependency : component_configs[dependency].image_name for dependency in dependencies}
+        dependency_images = {key : dependencies[key].image_name for key in dependencies}
 
         return BuildDockerImageStage(self._docker_client,
                                      image_name,

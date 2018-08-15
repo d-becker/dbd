@@ -7,7 +7,7 @@ from pathlib import Path
 
 import re
 
-from typing import Dict, Iterable, List, Optional, Tuple
+from typing import Dict, Iterable, List, Tuple
 
 import docker
 
@@ -57,22 +57,21 @@ class DefaultComponentImageBuilder(ComponentImageBuilder):
         (dist_type, argument) = dist_type_and_arg(component_config)
         dist_info = DistInfo(dist_type, argument)
         id_string = _get_id_string(dist_info)
-        image_name = self._get_image_name(dist_type,
-                                          id_string,
-                                          argument if dist_type == DistType.RELEASE else None,
+        image_name = self._get_image_name(id_string,
                                           built_config)
 
         docker_context = built_config.resource_path / self.name() / "docker_context"
 
+        dependency_dict = {dependency : built_config.components[dependency]
+                           for dependency in self.dependencies()}
         stages = self._stage_list_builder.build_stage_list(self.name(),
                                                            id_string,
-                                                           self.dependencies(),
+                                                           dependency_dict,
                                                            self._url_template,
                                                            image_name,
                                                            dist_info,
                                                            docker_context,
-                                                           self._cache,
-                                                           built_config)
+                                                           self._cache)
         stage_executor = StageChain(stages)
 
         if force_rebuild:
@@ -89,17 +88,13 @@ class DefaultComponentImageBuilder(ComponentImageBuilder):
                                                   self.name(),
                                                   self._version_command,
                                                   self._version_regex)
-
         return ComponentConfig(dist_type, version, image_name)
 
     def _get_image_name(self,
-                        dist_type: DistType,
                         id_string: str,
-                        version: Optional[str],
                         built_config: Configuration) -> str:
         template = "{repository}/{component}:{component_tag}{dependencies_tag}"
 
-        dependencies_tag: str
         dependencies = self.dependencies()
         dependencies.sort()
 

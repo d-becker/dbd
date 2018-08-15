@@ -6,11 +6,11 @@ from pathlib import Path
 import subprocess
 import tarfile
 import tempfile
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 import docker
 
-from component_builder import ComponentImageBuilder, Configuration, DistInfo, DistType
+from component_builder import ComponentConfig, ComponentImageBuilder, Configuration, DistInfo, DistType
 from default_component_image_builder.builder import (DefaultComponentImageBuilder,
                                                      StageListBuilder)
 from default_component_image_builder.cache import Cache
@@ -90,13 +90,12 @@ class OozieStageListBuilder(StageListBuilder):
     def build_stage_list(self,
                          component_name: str,
                          id_string: str,
-                         dependencies: List[str],
+                         dependencies: Dict[str, ComponentConfig],
                          url_template: str,
                          image_name: str,
                          dist_info: DistInfo,
                          docker_context_dir: Path,
-                         cache: Cache,
-                         built_config: Configuration) -> List[Stage]:
+                         cache: Cache) -> List[Stage]:
         default_stage_list = self._default_builder.build_stage_list(component_name,
                                                                     id_string,
                                                                     dependencies,
@@ -104,8 +103,7 @@ class OozieStageListBuilder(StageListBuilder):
                                                                     image_name,
                                                                     dist_info,
                                                                     docker_context_dir,
-                                                                    cache,
-                                                                    built_config)
+                                                                    cache)
         download_stage_index = OozieStageListBuilder._get_download_stage_index(default_stage_list)
 
         if download_stage_index is not None:
@@ -128,8 +126,7 @@ class OozieStageListBuilder(StageListBuilder):
             assert isinstance(default_stage_list[docker_stage_index], BuildDockerImageStage)
 
             # TODO: See if this can be solved more elegantly and without less code duplication.
-            dependency_images = {dependency : built_config.components[dependency].image_name
-                                 for dependency in dependencies}
+            dependency_images = {key : dependencies[key].image_name for key in dependencies}
             file_dependencies = [distro_path]
 
             new_docker_stage = BuildDockerImageStage(docker.from_env(),
