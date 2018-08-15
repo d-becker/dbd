@@ -1,8 +1,13 @@
 #!/usr/bin/env python3
 
+import hashlib
+import os
+
+from pathlib import Path
+
 import re
 
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, Iterable, List, Optional, Tuple
 
 import docker
 
@@ -50,14 +55,17 @@ class DefaultComponentImageBuilder(ComponentImageBuilder):
               built_config: Configuration,
               force_rebuild: bool = False) -> ComponentConfig:
         (dist_type, argument) = dist_type_and_arg(component_config)
+        dist_info = DistInfo(dist_type, argument)
+        id_string = _get_id_string(dist_info)
         image_name = self._get_image_name(dist_type,
+                                          id_string,
                                           argument if dist_type == DistType.RELEASE else None,
                                           built_config)
 
-        dist_info = DistInfo(dist_type, argument)
         docker_context = built_config.resource_path / self.name() / "docker_context"
 
         stages = self._stage_list_builder.build_stage_list(self.name(),
+                                                           id_string,
                                                            self.dependencies(),
                                                            self._url_template,
                                                            image_name,
@@ -86,19 +94,10 @@ class DefaultComponentImageBuilder(ComponentImageBuilder):
 
     def _get_image_name(self,
                         dist_type: DistType,
+                        id_string: str,
                         version: Optional[str],
                         built_config: Configuration) -> str:
         template = "{repository}/{component}:{component_tag}{dependencies_tag}"
-
-        component_tag: str
-        if dist_type == DistType.RELEASE:
-            if version is None:
-                raise ValueError("The version is None but release mode is specified.")
-            component_tag = version
-        elif dist_type == DistType.SNAPSHOT:
-            component_tag = "snapshot_{}".format(built_config.timestamp)
-        else:
-            raise RuntimeError("Unexpected value of DistType.")
 
         dependencies_tag: str
         dependencies = self.dependencies()
@@ -113,7 +112,7 @@ class DefaultComponentImageBuilder(ComponentImageBuilder):
 
         return template.format(repository=built_config.repository,
                                component=self.name(),
-                               component_tag=component_tag,
+                               component_tag=id_string,
                                dependencies_tag=dependencies_tag)
 
 
@@ -179,3 +178,29 @@ def find_out_version_from_image(docker_client: docker.DockerClient,
 
     version = match.group(1)
     return version
+
+def _get_id_string(dist_info: DistInfo) -> str:
+    # pylint: disable=no-else-return
+    if dist_info.dist_type == DistType.RELEASE:
+        # The id_string is the version string.
+        version = dist_info.argument
+        return version
+    else:
+        # The id_string is the hash of the source path prepended to the last modification of the source path tree.
+        source_path = Path(dist_info.argument).expanduser().resolve()
+        source_path_hash = hashlib.sha1(str(source_path).encode()).hexdigest()
+        last_mod = _get_last_modification_in_directory_tree(source_path)
+        return "{}_{}".format(source_path_hash, str(int(last_mod)))
+
+def _get_last_modification_in_directory_tree(directory: Path) -> float:
+    return max(map(lambda path: path.stat().st_mtime, _generate_all_paths(directory)))
+
+def _generate_all_paths(directory: Path) -> Iterable[Path]:
+    dir_path = Path(directory.expanduser().resolve())
+    if not dir_path.is_dir():
+        yield dir_path
+    else:
+        for dirpath, _, filenames in os.walk(dir_path):
+            yield Path(dirpath)
+            for  filename in filenames:
+                yield Path(dirpath) / filename

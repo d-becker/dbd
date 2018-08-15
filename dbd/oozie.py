@@ -89,6 +89,7 @@ class OozieStageListBuilder(StageListBuilder):
 
     def build_stage_list(self,
                          component_name: str,
+                         id_string: str,
                          dependencies: List[str],
                          url_template: str,
                          image_name: str,
@@ -97,6 +98,7 @@ class OozieStageListBuilder(StageListBuilder):
                          cache: Cache,
                          built_config: Configuration) -> List[Stage]:
         default_stage_list = self._default_builder.build_stage_list(component_name,
+                                                                    id_string,
                                                                     dependencies,
                                                                     url_template,
                                                                     image_name,
