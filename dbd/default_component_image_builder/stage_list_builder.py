@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 
 from abc import ABCMeta, abstractmethod
+import hashlib
+import os
 from pathlib import Path
 
-from typing import Dict, List
+from typing import Dict, Iterable, List
 
 import docker
 
@@ -48,7 +50,11 @@ class DefaultStageListBuilder(StageListBuilder):
                          docker_context_dir: Path,
                          cache: Cache,
                          built_config: Configuration) -> List[Stage]:
-        archive_dest_path = self._get_archive_dest_path(cache, dist_info, component_name)
+        archive_id_string = self._get_archive_id_string(dist_info)
+        archive_dest_path = cache.get_path("archive",
+                                           dist_info.dist_type,
+                                           component_name,
+                                           archive_id_string) / "{}.tar.gz".format(component_name)
 
         file_deps = [archive_dest_path]
 
@@ -65,8 +71,8 @@ class DefaultStageListBuilder(StageListBuilder):
 
         return stage_list
 
-    def _archive_retrieval_stage(self,
-                                 archive_dest_path: Path,
+    @staticmethod
+    def _archive_retrieval_stage(archive_dest_path: Path,
                                  dist_info: DistInfo,
                                  url_template: str) -> Stage:
 
@@ -96,16 +102,29 @@ class DefaultStageListBuilder(StageListBuilder):
                                      build_directory,
                                      file_dependencies)
 
-    def _get_archive_dest_path(self,
-                               cache: Cache,
-                               dist_info: DistInfo,
-                               component_name: str) -> Path:
-        id_string: str
+    @staticmethod
+    def _get_archive_id_string(dist_info: DistInfo) -> str:
         if dist_info.dist_type == DistType.RELEASE:
-            id_string = dist_info.argument
+            # The id_string is the version string.
+            version = dist_info.argument
+            return version
         else:
-            id_string = "snapshot" # TODO: prevent caching.
+            # The id_string is the hash of the source path prepended to the last modification of the source path tree.
+            # TODO: This caching could be extended to the image names, too.
+            source_path = Path(dist_info.argument)
+            source_path_hash = hashlib.sha1(str(source_path).encode()).hexdigest()
+            last_mod = _get_last_modification_in_directory_tree(source_path)
+            return "{}_{}".format(source_path_hash, str(int(last_mod)))
 
-        archive_dir = cache.get_path("archive", dist_info.dist_type, component_name, id_string)
+def _get_last_modification_in_directory_tree(directory: Path) -> float:
+    return max(map(lambda path: path.stat().st_mtime, _generate_all_paths(directory)))
 
-        return archive_dir / "{}.tar.gz".format(component_name)
+def _generate_all_paths(directory: Path) -> Iterable[Path]:
+    dir_path = Path(directory.expanduser().resolve())
+    if not dir_path.is_dir():
+        yield dir_path
+    else:
+        for dirpath, _, filenames in os.walk(dir_path):
+            yield Path(dirpath)
+            for  filename in filenames:
+                yield Path(dirpath) / filename
