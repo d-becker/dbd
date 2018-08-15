@@ -104,6 +104,7 @@ class DefaultStageListBuilder(StageListBuilder):
 
     @staticmethod
     def _get_archive_id_string(dist_info: DistInfo) -> str:
+        # pylint: disable=no-else-return
         if dist_info.dist_type == DistType.RELEASE:
             # The id_string is the version string.
             version = dist_info.argument
