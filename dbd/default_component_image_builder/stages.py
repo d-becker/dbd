@@ -44,15 +44,19 @@ class CreateTarfileStage(Stage):
 
     def check_precondition(self) -> bool:
         if not self._source_dir.is_dir():
-            logging.info("Stage {} precondition check: the source directory does not exist or is not a directory: {}."
-                         .format(self.name(), self._source_dir))
+            logging.info("Stage %s precondition check: the source directory does not exist or is not a directory: %s.",
+                         self.name(),
+                         self._source_dir)
             return False
 
         return True
 
     def execute(self) -> None:
-        logging.info("Stage {}: creating tar archive from {} as {}."
-                     .format(self.name(), self._source_dir, self._dest_path))
+        logging.info("Stage %s: creating tar archive from %s as %s.",
+                     self.name(),
+                     self._source_dir,
+                     self._dest_path)
+
         self._dest_path.parent.mkdir(parents=True, exist_ok=True)
         with tarfile.open(self._dest_path, "w:gz") as tar:
             tar.add(str(self._source_dir), arcname=self._source_dir.name)
@@ -115,7 +119,11 @@ class DownloadFileStage(Stage):
         return True
 
     def execute(self) -> None:
-        logging.info("Stage {}: downloading file from {} to {}.".format(self.name(), self._url, self._dest_path))
+        logging.info("Stage %s: downloading file from %s to %s.",
+                     self.name(),
+                     self._url,
+                     self._dest_path)
+
         self._dest_path.parent.mkdir(parents=True, exist_ok=True)
         self._downloader.download(self._url, self._dest_path)
         print() # Printing a newline is needed because the wget downloader output does not end with one.
@@ -158,20 +166,21 @@ class BuildDockerImageStage(Stage):
 
     def check_precondition(self) -> bool:
         if not self._build_context.is_dir():
-            logging.info("Stage {}: precondition check: the build directory is not an existing directory."
-                         .format(self.name()))
+            logging.info("Stage %s: precondition check: the build directory is not an existing directory.",
+                         self.name())
             return False
 
         for generated_resource_file in self._file_dependencies:
             if not generated_resource_file.exists():
-                logging.info("Stage {} precondition check: the generated resource file {} does not exist."
-                             .format(self.name(), generated_resource_file))
+                logging.info("Stage %s precondition check: the generated resource file %s does not exist.",
+                             self.name(),
+                             generated_resource_file)
                 return False
 
         return True
 
     def execute(self) -> None:
-        logging.info("Stage {}: building docker image {}.".format(self.name(), self._image_name))
+        logging.info("Stage %s: building docker image %s.", self.name(), self._image_name)
 
         buildargs = {"{}_IMAGE".format(component.upper()) : image
                      for (component, image) in self._dependency_images.items()}
@@ -186,7 +195,7 @@ class BuildDockerImageStage(Stage):
             generated_dir_path = tmp_context / generated_dir_name
             generated_dir_path.mkdir()
             BuildDockerImageStage._copy_all(self._file_dependencies, generated_dir_path)
-            
+
             self._docker_client.images.build(path=str(tmp_context),
                                              buildargs=buildargs,
                                              tag=self._image_name,
@@ -212,8 +221,9 @@ class ImageBuiltStage(Stage):
         try:
             self._docker_client.images.get(self._image_name)
         except docker.errors.ImageNotFound:
-            logging.info("Stage {} precondition check: the docker image {} does not exist locally."
-                         .format(self.name(), self._image_name))
+            logging.info("Stage %s precondition check: the docker image %s does not exist locally.",
+                         self.name(),
+                         self._image_name)
             return False
         else:
             return True

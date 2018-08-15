@@ -8,10 +8,13 @@ import tarfile
 import tempfile
 from typing import List, Optional
 
+import docker
+
 from component_builder import ComponentImageBuilder, Configuration, DistInfo, DistType
 from default_component_image_builder.builder import (DefaultComponentImageBuilder,
                                                      StageListBuilder)
 from default_component_image_builder.cache import Cache
+from default_component_image_builder.stages import BuildDockerImageStage
 from default_component_image_builder.stage_list_builder import DefaultStageListBuilder
 from stage import Stage
 
@@ -38,14 +41,15 @@ class BuildOozieStage(Stage):
 
     def check_precondition(self) -> bool:
         if not self._release_archive.exists():
-            logging.info("Stage {} precondition check: the release archive does not exist: {}."
-                         .format(self.name(), self._release_archive))
+            logging.info("Stage %s precondition check: the release archive does not exist: %s.",
+                         self.name(),
+                         self._release_archive)
             return False
 
         return True
 
     def execute(self) -> None:
-        logging.info("Stage {}: Extracting the downloaded Oozie tar file.".format(self.name()))
+        logging.info("Stage %s: Extracting the downloaded Oozie tar file.", self.name())
 
         with tempfile.TemporaryDirectory() as tmp_dir_name:
             tmp_dir = Path(tmp_dir_name)
@@ -65,7 +69,7 @@ class BuildOozieStage(Stage):
                            "-Ptez",
                            "-DskipTests"]
 
-                logging.info("Build command: {}.".format(" ".join(command)))
+                logging.info("Build command: %s.", " ".join(command))
 
                 self._shell_command_executor.run(command)
 
@@ -105,17 +109,33 @@ class OozieStageListBuilder(StageListBuilder):
         if download_stage_index is not None:
             assert dist_info.dist_type == DistType.RELEASE
 
-            archive_path = cache.get_path("archive", dist_info.dist_type, component_name, dist_info.argument) / "oozie.tar.gz"
-            distro_path = cache.get_path("distro", dist_info.dist_type, component_name, dist_info.argument) / "oozie.tar.gz"
+            archive_path = cache.get_path("archive",
+                                          dist_info.dist_type,
+                                          component_name,
+                                          dist_info.argument) / "oozie.tar.gz"
+            distro_path = cache.get_path("distro",
+                                         dist_info.dist_type,
+                                         component_name,
+                                         dist_info.argument) / "oozie.tar.gz"
 
             build_oozie_stage = BuildOozieStage(archive_path, distro_path, DefaultShellCommandExecutor())
 
             default_stage_list.insert(download_stage_index + 1, build_oozie_stage)
 
             docker_stage_index = download_stage_index + 2
-            docker_stage = default_stage_list[docker_stage_index]
-            assert docker_stage.name() == "build_docker_image"
-            docker_stage._file_dependencies = [distro_path]
+            assert isinstance(default_stage_list[docker_stage_index], BuildDockerImageStage)
+
+            # TODO: See if this can be solved more elegantly and without less code duplication.
+            dependency_images = {dependency : built_config.components[dependency].image_name
+                                 for dependency in dependencies}
+            file_dependencies = [distro_path]
+
+            new_docker_stage = BuildDockerImageStage(docker.from_env(),
+                                                     image_name,
+                                                     dependency_images,
+                                                     docker_context_dir,
+                                                     file_dependencies)
+            default_stage_list[docker_stage_index] = new_docker_stage
         else:
             assert dist_info.dist_type == DistType.SNAPSHOT
 
