@@ -79,8 +79,12 @@ class DefaultComponentImageBuilder(ComponentImageBuilder):
                                           self._cache,
                                           pipeline)
         else:
-            # TODO: check if image exists locally and execute what is needed.
-            pass
+            if not image_exists_locally(self._docker_client, image_name):
+                pipeline_executor.execute_needed(self.name(),
+                                                 dist_type,
+                                                 id_string,
+                                                 self._cache,
+                                                 pipeline)
 
         version: str
         if dist_type == DistType.RELEASE:
@@ -143,6 +147,14 @@ def dist_type_and_arg(component_config: Dict[str, str]) -> Tuple[DistType, str]:
     else:
         path = component_config["snapshot"]
         return (DistType.SNAPSHOT, path)
+
+def image_exists_locally(docker_client: docker.DockerClient, image_name: str) -> bool:
+    try:
+        docker_client.images.get(image_name)
+    except docker.errors.ImageNotFound:
+        return False
+    else:
+        return True
 
 def find_out_version_from_image(docker_client: docker.DockerClient,
                                 image_name: str,

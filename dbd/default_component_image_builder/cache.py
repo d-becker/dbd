@@ -24,4 +24,5 @@ class Cache:
                 / component_name
                 / self._stage_paths[stage_type]
                 / self._dist_type_paths[dist_type]
-                / id_string)
+                / id_string
+                / "{}.tar.gz".format(component_name))

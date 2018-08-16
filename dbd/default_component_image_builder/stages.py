@@ -11,6 +11,7 @@ import tempfile
 from typing import Dict, Iterable
 
 import docker
+import wget
 
 from default_component_image_builder.pipeline import EntryStage, FinalStage
 

@@ -2,7 +2,7 @@
 
 # pylint: disable=missing-docstring
 
-from typing import cast, Any, Dict, List, Optional
+from typing import cast, Any, Callable, Dict, List, Optional
 from pathlib import Path
 
 import docker
@@ -102,10 +102,10 @@ class TestBuildDockerImageStage(TmpDirTestCase):
     def test_execute_calls_docker_client_with_correct_arguments(self) -> None:
         docker_client = MockDockerClient()
 
-        static_build_context = self._tmp_dir_path / "docker_context"
-        static_build_context.mkdir()
-        files_in_static_build_context = [Path("Dockerfile"), Path("file.tar.gz")]
-        TestBuildDockerImageStage._populate_dir(static_build_context, files_in_static_build_context)
+        build_context_resources = self._tmp_dir_path / "docker_context"
+        build_context_resources.mkdir()
+        files_in_build_context_resources = [Path("Dockerfile"), Path("file.tar.gz")]
+        TestBuildDockerImageStage._populate_dir(build_context_resources, files_in_build_context_resources)
 
         image_name = "some_image_name"
         dependency_images: Dict[str, str] = {"component_a": "component_a_image_name",
@@ -118,7 +118,7 @@ class TestBuildDockerImageStage(TmpDirTestCase):
         stage = BuildDockerImageStage(docker_client,
                                       image_name,
                                       dependency_images,
-                                      static_build_context)
+                                      build_context_resources)
 
         stage.execute(input_file)
 
@@ -132,10 +132,10 @@ class TestBuildDockerImageStage(TmpDirTestCase):
         expected_buildargs["GENERATED_DIR"] = "generated"
         self.assertEqual(expected_buildargs, called_args["buildargs"])
 
-        real_context = Path(called_args["path"])
-        files_in_real_context: List[Path] = docker_client.images.files_in_context
+        build_directory = Path(called_args["path"])
+        files_in_build_directory: List[Path] = docker_client.images.files_in_context
 
-        # TODO: make it more readable.
-        self.assertTrue(all(map(lambda p: (real_context / p) in files_in_real_context,
-                                files_in_static_build_context)))
-        self.assertTrue((real_context / "generated" / input_file) in files_in_real_context)
+        present_in_build_directory: Callable[[Path], bool] = lambda p: (build_directory / p) in files_in_build_directory
+        self.assertTrue(all(map(present_in_build_directory, files_in_build_context_resources)))
+        
+        self.assertTrue((build_directory / "generated" / input_file.name) in files_in_build_directory)
