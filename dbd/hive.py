@@ -4,7 +4,7 @@ from typing import List
 from pathlib import Path
 
 import component_builder
-from default_component_image_builder.builder import default_cache_path_fragments, DefaultComponentImageBuilder
+from default_component_image_builder.builder import DefaultComponentImageBuilder
 from default_component_image_builder.cache import Cache
 from default_component_image_builder.pipeline_builder import DefaultPipelineBuilder
 
@@ -14,8 +14,7 @@ def get_image_builder(dependencies: List[str], cache_dir: Path) -> component_bui
     version_regex = "Hive (.*)\n"
     pipeline_builder = DefaultPipelineBuilder()
 
-    cache_paths = default_cache_path_fragments()
-    cache = Cache(cache_dir, cache_paths)
+    cache = Cache(cache_dir)
 
     return DefaultComponentImageBuilder("hive",
                                         dependencies,

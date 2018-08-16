@@ -43,16 +43,17 @@ class DefaultPipelineBuilder(PipelineBuilder):
 
     @staticmethod
     def _get_entry_stage(dist_info: DistInfo, url_template: str) -> EntryStage:
+        # pylint: disable=no-else-return
         if dist_info.dist_type == DistType.RELEASE:
             downloader = DefaultDownloader()
             version = dist_info.argument
             url = url_template.format(version)
-            return DownloadFileStage(downloader, url)
+            return DownloadFileStage("archive", downloader, url)
         else:
             assert dist_info.dist_type == DistType.SNAPSHOT
 
-            source_dir = Path(dist_info.argument)
-            return CreateTarfileStage(source_dir)
+            source_dir = Path(dist_info.argument).expanduser().resolve()
+            return CreateTarfileStage("archive", source_dir)
 
     @staticmethod
     def _get_docker_image_stage(docker_client: docker.DockerClient,
@@ -61,7 +62,8 @@ class DefaultPipelineBuilder(PipelineBuilder):
                                 docker_context_dir: Path) -> BuildDockerImageStage:
         dependency_images = {key : dependencies[key].image_name for key in dependencies}
 
-        return BuildDockerImageStage(docker_client,
+        return BuildDockerImageStage("docker",
+                                     docker_client,
                                      image_name,
                                      dependency_images,
                                      docker_context_dir)

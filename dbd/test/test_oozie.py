@@ -24,7 +24,7 @@ class TestBuildOozieStage(TmpDirTestCase):
         dest_path = self._tmp_dir_path / "oozie-disto.tar.gz"
 
         shell_command_executor = MockShellCommandExecutor()
-        stage = BuildOozieStage(shell_command_executor)
+        stage = BuildOozieStage("distro", shell_command_executor)
 
         stage.execute(source_archive, dest_path)
 

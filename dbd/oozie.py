@@ -9,7 +9,7 @@ import tempfile
 from typing import Dict, List
 
 from component_builder import ComponentConfig, ComponentImageBuilder, DistInfo, DistType
-from default_component_image_builder.builder import default_cache_path_fragments, DefaultComponentImageBuilder
+from default_component_image_builder.builder import DefaultComponentImageBuilder
 from default_component_image_builder.cache import Cache
 from default_component_image_builder.pipeline import Pipeline, Stage
 from default_component_image_builder.pipeline_builder import DefaultPipelineBuilder, PipelineBuilder
@@ -25,11 +25,13 @@ class DefaultShellCommandExecutor(ShellCommandExecutor):
 
 class BuildOozieStage(Stage):
     def __init__(self,
+                 name: str,
                  shell_command_executor: ShellCommandExecutor) -> None:
+        self._name = name
         self._shell_command_executor = shell_command_executor
 
     def name(self) -> str:
-        return "build_oozie"
+        return self._name
 
     def execute(self, input_path: Path, output_path: Path) -> None:
         logging.info("Stage %s: Extracting the downloaded Oozie tar file.", self.name())
@@ -83,7 +85,7 @@ class OoziePipelineBuilder(PipelineBuilder):
                                                         docker_context_dir)
 
         if dist_info.dist_type == DistType.RELEASE:
-            build_oozie_stage = BuildOozieStage(DefaultShellCommandExecutor())
+            build_oozie_stage = BuildOozieStage("distro", DefaultShellCommandExecutor())
             pipeline.inner_stages.insert(0, build_oozie_stage)
 
         return pipeline
@@ -94,10 +96,7 @@ def get_image_builder(dependencies: List[str], cache_dir: Path) -> ComponentImag
     version_regex = "version: (.*)\n"
     pipeline_builder = OoziePipelineBuilder()
 
-    cache_paths = default_cache_path_fragments()
-    cache_paths[BuildOozieStage] = Path("distro")
-
-    cache = Cache(cache_dir, cache_paths)
+    cache = Cache(cache_dir)
 
     return DefaultComponentImageBuilder("oozie",
                                         dependencies,

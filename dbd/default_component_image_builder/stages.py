@@ -16,11 +16,14 @@ import wget
 from default_component_image_builder.pipeline import EntryStage, FinalStage
 
 class CreateTarfileStage(EntryStage):
-    def __init__(self, src_dir: Path) -> None:
-        self._src_dir = src_dir
+    def __init__(self,
+                 name: str,
+                 src_dir: Path) -> None:
+        self._name = name
+        self._src_dir = src_dir.expanduser().resolve()
 
     def name(self) -> str:
-        return "create_tarfile"
+        return self._name
 
     def execute(self, output_path: Path) -> None:
         logging.info("Stage %s: creating tar archive from %s.",
@@ -53,12 +56,17 @@ class DefaultDownloader(Downloader):
         wget.download(url, out=str(dest_path))
 
 class DownloadFileStage(EntryStage):
-    def __init__(self, downloader: Downloader, url: str) -> None:
+    def __init__(self,
+                 name: str,
+                 downloader:
+                 Downloader,
+                 url: str) -> None:
+        self._name = name
         self._downloader = downloader
         self._url = url
 
     def name(self) -> str:
-        return "download_file"
+        return self._name
 
     def execute(self, output_path: Path) -> None:
         logging.info("Stage %s: downloading file from %s.",
@@ -70,18 +78,19 @@ class DownloadFileStage(EntryStage):
 
 class BuildDockerImageStage(FinalStage):
     def __init__(self,
+                 name: str,
                  docker_client: docker.DockerClient,
                  image_name: str,
                  dependency_images: Dict[str, str],
                  build_context: Path) -> None:
-
+        self._name = name
         self._docker_client = docker_client
         self._image_name = image_name
         self._dependency_images = dependency_images
-        self._build_context = build_context
+        self._build_context = build_context.expanduser().resolve()
 
     def name(self) -> str:
-        return "build_docker_image"
+        return self._name
 
     def execute(self, input_path: Path) -> None:
         logging.info("Stage %s: building docker image %s.", self.name(), self._image_name)
@@ -98,7 +107,7 @@ class BuildDockerImageStage(FinalStage):
 
             generated_dir_path = tmp_context / generated_dir_name
             generated_dir_path.mkdir()
-            BuildDockerImageStage._copy_all([input_path], generated_dir_path) # TODO: Shutil.copy?
+            BuildDockerImageStage._copy_tree_or_file(input_path, generated_dir_path)
 
             self._docker_client.images.build(path=str(tmp_context),
                                              buildargs=buildargs,
@@ -108,7 +117,11 @@ class BuildDockerImageStage(FinalStage):
     @staticmethod
     def _copy_all(items: Iterable[Path], dst: Path) -> None:
         for item in items:
-            if item.is_dir():
-                shutil.copytree(item, dst / item.name)
-            else:
-                shutil.copy(item, dst)
+            BuildDockerImageStage._copy_tree_or_file(item, dst)
+
+    @staticmethod
+    def _copy_tree_or_file(item: Path, dst: Path) -> None:
+        if item.is_dir():
+            shutil.copytree(item, dst / item.name)
+        else:
+            shutil.copy(item, dst)

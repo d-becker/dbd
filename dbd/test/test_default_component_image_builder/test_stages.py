@@ -22,7 +22,7 @@ class TestCreateTarfileStage(TmpDirTestCase):
 
         dest_path = self._tmp_dir_path / "file.tar.gz"
 
-        stage = CreateTarfileStage(source_dir)
+        stage = CreateTarfileStage("archive", source_dir)
 
         stage.execute(dest_path)
 
@@ -51,7 +51,7 @@ class TestDownloadFileStage(TmpDirTestCase):
 
         downloader = TestDownloadFileStage.MockDownloader()
         url = "www.something.com"
-        stage = DownloadFileStage(downloader, url)
+        stage = DownloadFileStage("archive", downloader, url)
 
         stage.execute(dest_path)
 
@@ -115,7 +115,8 @@ class TestBuildDockerImageStage(TmpDirTestCase):
         input_file = self._tmp_dir_path / input_file_name
         input_file.touch()
 
-        stage = BuildDockerImageStage(docker_client,
+        stage = BuildDockerImageStage("docker",
+                                      docker_client,
                                       image_name,
                                       dependency_images,
                                       build_context_resources)
@@ -137,5 +138,5 @@ class TestBuildDockerImageStage(TmpDirTestCase):
 
         present_in_build_directory: Callable[[Path], bool] = lambda p: (build_directory / p) in files_in_build_directory
         self.assertTrue(all(map(present_in_build_directory, files_in_build_context_resources)))
-        
+
         self.assertTrue((build_directory / "generated" / input_file.name) in files_in_build_directory)

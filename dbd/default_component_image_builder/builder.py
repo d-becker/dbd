@@ -7,23 +7,14 @@ from pathlib import Path
 
 import re
 
-from typing import Dict, Iterable, List, Tuple, Type, Union
+from typing import Dict, Iterable, List, Tuple
 
 import docker
 
 from component_builder import ComponentConfig, ComponentImageBuilder, Configuration, DistType, DistInfo
 from default_component_image_builder.cache import Cache
-from default_component_image_builder.pipeline import EntryStage, Stage
 from default_component_image_builder.pipeline_builder import PipelineBuilder
 from default_component_image_builder.pipeline_executor import PipelineExecutor
-from default_component_image_builder.stages import CreateTarfileStage, DownloadFileStage
-
-OutputStageType = Type[Union[EntryStage, Stage]]
-def default_cache_path_fragments() -> Dict[OutputStageType, Path]:
-    return {
-        DownloadFileStage : Path("archive"),
-        CreateTarfileStage : Path("archive"),
-    }
 
 class DefaultComponentImageBuilder(ComponentImageBuilder):
     def __init__(self,
