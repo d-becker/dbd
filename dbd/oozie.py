@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
 
+"""
+This module contains the function that creates `ComponentImageBuilder`s for the
+Oozie component and some Oozie-specific classes that the function depends on.
+"""
+
 from abc import ABCMeta, abstractmethod
 import logging
 from pathlib import Path
@@ -15,11 +20,25 @@ from default_component_image_builder.pipeline import Pipeline, Stage
 from default_component_image_builder.pipeline_builder import DefaultPipelineBuilder, PipelineBuilder
 
 class ShellCommandExecutor(metaclass=ABCMeta):
+    """
+    An interface for objects that can execute shell commands.
+    """
+
     @abstractmethod
     def run(self, command: List[str]) -> None:
+        """
+        Runs the provided shell commands.
+
+        Args:
+            command: The command to run as a list - the first element is the executable name, the others are arguments.
+        """
         pass
 
 class DefaultShellCommandExecutor(ShellCommandExecutor):
+    """
+    The default shell command executor. It uses python's `subprocess` module to run the commands.
+    """
+
     def run(self, command: List[str]) -> None:
         subprocess.run(command, check=True)
 
@@ -91,6 +110,14 @@ class OoziePipelineBuilder(PipelineBuilder):
         return pipeline
 
 def get_image_builder(dependencies: List[str], cache_dir: Path) -> ComponentImageBuilder:
+    """
+    Returns a `ComponentImageBuilder` object that can build Oozie docker images.
+
+    Args:
+        dependencies: The names of the components that this component depends on.
+        cache_dir: The path to the global cache directory.
+    """
+
     url_template = "https://archive.apache.org//dist/oozie/{0}/oozie-{0}.tar.gz"
     version_command = "bin/oozied.sh start && bin/oozie version"
     version_regex = "version: (.*)\n"

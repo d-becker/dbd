@@ -2,7 +2,8 @@
 
 """
 This module contains an interface for classes that build docker
-images for the components and classes that are needed for them.
+images for the components as well as classes that it depends on.
+
 """
 
 from abc import ABCMeta, abstractmethod
@@ -22,16 +23,40 @@ class DistType(Enum):
     SNAPSHOT = auto()
 
 class DistInfo:
+    """
+    A class storing information about the user-provided configuration of the component distribution - its distribution
+    type (release or snapshot) and an additional string, `argument`, which in case of release distributions is the
+    version number, and in case of snapshot builds, the path to the distribution on the local file system.
+
+    """
+
     def __init__(self, dist_type: DistType, argument: str) -> None:
+        """
+        Creates a new `DistInfo` object.
+
+        Args:
+            dist_type: The type of the distribution (release or snapshot).
+            argument: For release distributions the version number, for snapshot
+                builds the path to the distribution on the local file system.
+        """
+
         self._dist_type = dist_type
         self._argument = argument
 
     @property
     def dist_type(self) -> DistType:
+        """
+        Returns the distribution type.
+        """
+
         return self._dist_type
 
     @property
     def argument(self) -> str:
+        """
+        Returns the argument.
+        """
+
         return self._argument
 
 class ComponentConfig:

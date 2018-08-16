@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
 
+"""
+This module contains the default implementation of the `component_builder.ComponentImageBuilder` interface. For more
+details, see the class documentation.
+
+"""
+
 import hashlib
 import os
 
@@ -25,9 +31,27 @@ class DefaultComponentImageBuilder(ComponentImageBuilder):
                  version_regex: str,
                  cache: Cache,
                  pipeline_builder: PipelineBuilder) -> None:
+        """
+        Creates a new `DefaultComponentImageBuilder` object.
+
+        Args:
+            component_name: The name of the component for which the image is built.
+            dependencies: The dependencies of the component.
+            url_template: A url templated with the version number of the component, from which the release
+                 archive can be downloaded. In the string, \"{0}\" is the placholder for the version number.
+            version_command: The command that should be run inside the built docker container
+                to retrieve its version number. The actual version number will be obtained by
+                matching `version_regex` against the output of this command.
+            version_regex: The regex that will be matched against the output
+                of `version_command` to retrieve the actual version number.
+            cache: The object from which cache locations can be queried.
+            pipeline_builder: The pipeline builder to be used to generate the build stages.
+
+        """
+
         self._name = component_name
         self._dependencies = dependencies
-        self._url_template = url_template # A string with {0} which will be formatted with the version.
+        self._url_template = url_template
         self._version_command = version_command
         self._version_regex = version_regex
         self._cache = cache
@@ -140,6 +164,16 @@ def dist_type_and_arg(component_config: Dict[str, str]) -> Tuple[DistType, str]:
         return (DistType.SNAPSHOT, path)
 
 def image_exists_locally(docker_client: docker.DockerClient, image_name: str) -> bool:
+    """
+    Returns whether there exists a docker image with name `image_name` locally.
+
+    Args:
+        image_name: The name of the docker image to check.
+
+    Returns:
+        True if the docker image with the given name exists; False otherwise.
+    """
+
     try:
         docker_client.images.get(image_name)
     except docker.errors.ImageNotFound:

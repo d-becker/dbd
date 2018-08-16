@@ -16,9 +16,21 @@ import wget
 from default_component_image_builder.pipeline import EntryStage, FinalStage
 
 class CreateTarfileStage(EntryStage):
+    """
+    An entry stage that creates a tar archive of a directory.
+    """
+
     def __init__(self,
                  name: str,
                  src_dir: Path) -> None:
+        """
+        Creates a new `CreateTarfileStage` object.
+
+        Args:
+            name: The name of the stage.
+            src_dir: The directory of which the archive will be created.
+        """
+
         self._name = name
         self._src_dir = src_dir.expanduser().resolve()
 
@@ -52,15 +64,32 @@ class Downloader(metaclass=ABCMeta):
         pass
 
 class DefaultDownloader(Downloader):
+    """
+    The default implementation of the `Downloader` interface.
+    """
+
     def download(self, url: str, dest_path: Path) -> None:
         wget.download(url, out=str(dest_path))
 
 class DownloadFileStage(EntryStage):
+    """
+    An entry stage that downloads a file.
+    """
+
     def __init__(self,
                  name: str,
-                 downloader:
-                 Downloader,
+                 downloader: Downloader,
                  url: str) -> None:
+        """
+        Creates a new `DownloadFileStage` object.
+
+        Args:
+            name: The name of the stage.
+            downloader: The `Downloader` object to use to download the file.
+            url: The url from which to download the file.
+
+        """
+
         self._name = name
         self._downloader = downloader
         self._url = url
@@ -77,12 +106,30 @@ class DownloadFileStage(EntryStage):
         print() # Printing a newline is needed because the wget downloader output does not end with one.
 
 class BuildDockerImageStage(FinalStage):
+    """
+    A final stage that builds a docker image.
+    """
+
     def __init__(self,
                  name: str,
                  docker_client: docker.DockerClient,
                  image_name: str,
                  dependency_images: Dict[str, str],
                  build_context: Path) -> None:
+        """
+        Creates a new `BuildDockerImageStage` object.
+        
+        Args:
+            name: The name of the stage.
+            docker_client: The docker client to use to build the docker image.
+            image_name: The name of the docker image that will be built.
+            dependency_images: A dictionary where the keys are the dependencies of the
+                component for which the docker image is built, and the values are the
+                names of the already built docker images of those components.
+            build_context: The path to the static (non-generated) resources that need
+                to be present in the docker build directory when the image is built.
+        """
+
         self._name = name
         self._docker_client = docker_client
         self._image_name = image_name
