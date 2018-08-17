@@ -125,7 +125,6 @@ class PipelineExecutor:
                       pipeline: Pipeline,
                       input_path: Path,
                       start_index: int) -> None:
-        print("Stages: {}.".format(pipeline.inner_stages))
         for stage in pipeline.inner_stages[start_index:]:
             output_path = cache.get_path(component_name, stage.name(), dist_type, id_string)
 
