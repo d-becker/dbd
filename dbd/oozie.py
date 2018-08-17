@@ -43,9 +43,22 @@ class DefaultShellCommandExecutor(ShellCommandExecutor):
         subprocess.run(command, check=True)
 
 class BuildOozieStage(Stage):
+    """
+    A stage that builds the Oozie distribution from source.
+    """
+
     def __init__(self,
                  name: str,
                  shell_command_executor: ShellCommandExecutor) -> None:
+        """
+        Creates a new `BuildOozieStage` object.
+
+        Args:
+            name: The name of the stage.
+            shell_command_executor: The `ShellCommandExecutor` to use.
+
+        """
+
         self._name = name
         self._shell_command_executor = shell_command_executor
 
@@ -88,6 +101,10 @@ class BuildOozieStage(Stage):
                 distro_file_path.rename(output_path)
 
 class OoziePipelineBuilder(PipelineBuilder):
+    """
+    A `PipelineBuilder` that builds pipelines for the Oozie component.
+    """
+
     def __init__(self) -> None:
         self._default_builder = DefaultPipelineBuilder()
 

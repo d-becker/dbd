@@ -23,6 +23,27 @@ from default_component_image_builder.pipeline.builder import PipelineBuilder
 from default_component_image_builder.pipeline.executor import PipelineExecutor
 
 class DefaultComponentImageBuilder(ComponentImageBuilder):
+    """
+    This class is the default implementation of the `component_builder.ComponentImageBuilder` interface. It tries to
+    extract and provide what is common in all (or most) image build processes but remain general and
+    flexible. Individual components' image builders can be instances of this class directly, subclassing may not be
+    necessary.
+
+    The component image building process uses the following model. The building process is divided into stages. The
+    process is then a pipeline built up of these stages: each stage produces an intermediate result, which will be the
+    input of the next stage. The intermediate results are cached on the filesystem, so that it is not always necessary
+    to execute all stages. The cache locations can be customised through the `cache` parameter.
+
+    To customise the image builder to build the image for a specific component, a suitable pipeline builder has to be
+    provided. The pipeline builder is responsible for generating the pipeline stages for a given component and
+    configuration. Each time the `build` method of the image builder is called, the pipeline builder will be used to
+    generate a pipeline for that particular configuration - the pipeline is not fixed for a component, it may for
+    example depend on whether the component distribution is a release or a snapshot build.
+
+    For more information about how pipelines work, see the `pipeline` package's documentation.
+
+    """
+
     def __init__(self,
                  component_name: str,
                  dependencies: List[str],

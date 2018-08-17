@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
 
+"""
+This module contains a class which can be used to query cache locations that depend on the component and configuration.
+"""
+
 from typing import Dict, Optional
 from pathlib import Path
 
