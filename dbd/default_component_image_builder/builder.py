@@ -90,7 +90,7 @@ class DefaultComponentImageBuilder(ComponentImageBuilder):
               component_config: Dict[str, str],
               built_config: Configuration,
               force_rebuild: bool = False) -> ComponentConfig:
-        (dist_type, argument) = dist_type_and_arg(component_config)
+        (dist_type, argument) = _dist_type_and_arg(component_config)
         dist_info = DistInfo(dist_type, argument)
         id_string = _get_id_string(dist_info)
         image_name = self._get_image_name(id_string,
@@ -115,7 +115,7 @@ class DefaultComponentImageBuilder(ComponentImageBuilder):
                                           self._cache,
                                           pipeline)
         else:
-            if not image_exists_locally(self._docker_client, image_name):
+            if not _image_exists_locally(self._docker_client, image_name):
                 pipeline_executor.execute_needed(self.name(),
                                                  dist_type,
                                                  id_string,
@@ -126,11 +126,11 @@ class DefaultComponentImageBuilder(ComponentImageBuilder):
         if dist_type == DistType.RELEASE:
             version = argument
         else:
-            version = find_out_version_from_image(self._docker_client,
-                                                  image_name,
-                                                  self.name(),
-                                                  self._version_command,
-                                                  self._version_regex)
+            version = _find_out_version_from_image(self._docker_client,
+                                                   image_name,
+                                                   self.name(),
+                                                   self._version_command,
+                                                   self._version_regex)
         return ComponentConfig(dist_type, version, image_name)
 
     def _get_image_name(self,
@@ -154,7 +154,7 @@ class DefaultComponentImageBuilder(ComponentImageBuilder):
                                dependencies_tag=dependencies_tag)
 
 
-def dist_type_and_arg(component_config: Dict[str, str]) -> Tuple[DistType, str]:
+def _dist_type_and_arg(component_config: Dict[str, str]) -> Tuple[DistType, str]:
     """
     Returns the distribution type (release or snapshot) and the corresponding argument
     (version or path to snapshot buid) from a component configuration dictionary.
@@ -184,7 +184,7 @@ def dist_type_and_arg(component_config: Dict[str, str]) -> Tuple[DistType, str]:
         path = component_config["snapshot"]
         return (DistType.SNAPSHOT, path)
 
-def image_exists_locally(docker_client: docker.DockerClient, image_name: str) -> bool:
+def _image_exists_locally(docker_client: docker.DockerClient, image_name: str) -> bool:
     """
     Returns whether there exists a docker image with name `image_name` locally.
 
@@ -202,11 +202,11 @@ def image_exists_locally(docker_client: docker.DockerClient, image_name: str) ->
     else:
         return True
 
-def find_out_version_from_image(docker_client: docker.DockerClient,
-                                image_name: str,
-                                component_name: str,
-                                command: str,
-                                regex: str) -> str:
+def _find_out_version_from_image(docker_client: docker.DockerClient,
+                                 image_name: str,
+                                 component_name: str,
+                                 command: str,
+                                 regex: str) -> str:
     """
     Retrieves the version of a component from a docker image.
 
