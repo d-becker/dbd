@@ -10,7 +10,7 @@ from pathlib import Path
 import component_builder
 from default_component_image_builder.builder import DefaultComponentImageBuilder
 from default_component_image_builder.cache import Cache
-from default_component_image_builder.pipeline_builder import DefaultPipelineBuilder
+from default_component_image_builder.pipeline.builder import DefaultPipelineBuilder
 
 def get_image_builder(dependencies: List[str], cache_dir: Path) -> component_builder.ComponentImageBuilder:
     """

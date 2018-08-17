@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
 
+"""
+This module contains the pipeline executor.
+"""
+
 import tempfile
 from pathlib import Path
 from typing import Optional, Tuple, Union
@@ -9,7 +13,20 @@ from default_component_image_builder.cache import Cache
 from default_component_image_builder.pipeline import EntryStage, Pipeline, Stage
 
 class PipelineExecutor:
+    """
+    Executes a pipeline, making the output of a stage become the input of the next stage at runtime.
+
+    Intermediate results are cached.
+
+    An attempt is made at writing the cache files atomically - the output of the stages is first
+    written to a temporary file which is then renamed to the cached file.
+
+    For more information, see the package level documentation.
+
+    """
+
     class _OutputExecutableWrapper:
+        # pylint: disable=missing-docstring
         def __init__(self,
                      stage: Stage,
                      input_path: Path) -> None:
@@ -25,6 +42,19 @@ class PipelineExecutor:
                     id_string: str,
                     cache: Cache,
                     pipeline: Pipeline) -> None:
+        """
+        Executes all stages of the provided pipeline, regardless of whether there are cached intermediate results.
+        Produced intermediate results are still written to the cache.
+
+        Args:
+            component_name: The name of the component that the pipeline builds the image for.
+            dist_type: The distribution type of the component (release or snapshot).
+            id_string: A string that identifies the build configuration - for example for
+                release builds, it could be the version number.
+            cache: The cache path locator to use to get the appropriate cache directories.
+            pipeline: The pipeline to execute.
+        """
+
         entry_stage = pipeline.entry_stage
         entry_output_path = cache.get_path(component_name, entry_stage.name(), dist_type, id_string)
 
@@ -45,6 +75,12 @@ class PipelineExecutor:
                        id_string: str,
                        cache: Cache,
                        pipeline: Pipeline) -> None:
+        """
+        Executes the pipeline from the latest stage the input of which is cached. The arguments are the same as for the
+        `execute_all` method.
+
+        """
+
         first_needed_stage_index_and_input_path = self._get_first_needed_stage_index_and_input_path(
             component_name,
             dist_type,

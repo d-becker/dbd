@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 
 """
-This module contains classes that represent the pipeline and the stages of the component image building process.
+This module contains the main building blocks of the pipeline package. For more information, see the package level
+documentation.
 """
 
 from abc import ABCMeta, abstractmethod

@@ -19,8 +19,8 @@ import docker
 
 from component_builder import ComponentConfig, ComponentImageBuilder, Configuration, DistType, DistInfo
 from default_component_image_builder.cache import Cache
-from default_component_image_builder.pipeline_builder import PipelineBuilder
-from default_component_image_builder.pipeline_executor import PipelineExecutor
+from default_component_image_builder.pipeline.builder import PipelineBuilder
+from default_component_image_builder.pipeline.executor import PipelineExecutor
 
 class DefaultComponentImageBuilder(ComponentImageBuilder):
     def __init__(self,

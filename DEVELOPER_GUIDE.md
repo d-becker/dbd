@@ -118,8 +118,8 @@ The files that the main application needs are the following:
 * dependencies.txt: Contains the names of the other components that this component depends on, separated by newlines.
  
 Although it is possible to implement a `ComponentImageBuilder` that works differently, the
-`DefaultComponentImageBuilder` class, which is the type of the image builders of all existing components make use of the
-following convention, so any additinal `ComponentImageBuilder` should also do so:
+`DefaultComponentImageBuilder` class, which is the type of the image builders of all existing components, makes use of
+the following convention, so any additinal `ComponentImageBuilder` should also do so:
 
 In the resources directory of each component, there should be a a directory with the name `docker_context`. It should
 contain the Dockerfile and any files that need to be in the docker build directory when building the image, except for

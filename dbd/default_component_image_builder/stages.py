@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
 
+"""
+This module contains pipeline stages needed by the `DefaultComponentImageBuilder` class.
+"""
+
 from abc import ABCMeta, abstractmethod
 import logging
 from pathlib import Path
@@ -118,7 +122,7 @@ class BuildDockerImageStage(FinalStage):
                  build_context: Path) -> None:
         """
         Creates a new `BuildDockerImageStage` object.
-        
+
         Args:
             name: The name of the stage.
             docker_client: The docker client to use to build the docker image.

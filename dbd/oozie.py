@@ -17,7 +17,7 @@ from component_builder import ComponentConfig, ComponentImageBuilder, DistInfo, 
 from default_component_image_builder.builder import DefaultComponentImageBuilder
 from default_component_image_builder.cache import Cache
 from default_component_image_builder.pipeline import Pipeline, Stage
-from default_component_image_builder.pipeline_builder import DefaultPipelineBuilder, PipelineBuilder
+from default_component_image_builder.pipeline.builder import DefaultPipelineBuilder, PipelineBuilder
 
 class ShellCommandExecutor(metaclass=ABCMeta):
     """

@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
 
+"""
+This module contains the `PipelineBuilder` interface and a default implementation.
+"""
+
 from abc import ABCMeta, abstractmethod
 from pathlib import Path
 
@@ -17,6 +21,10 @@ from default_component_image_builder.stages import (
     DownloadFileStage)
 
 class PipelineBuilder(metaclass=ABCMeta):
+    """
+    An interface for classes that build pipelines from the provided configuration.
+    """
+
     @abstractmethod
     def build_pipeline(self,
                        dependencies: Dict[str, ComponentConfig],
@@ -24,9 +32,29 @@ class PipelineBuilder(metaclass=ABCMeta):
                        image_name: str,
                        dist_info: DistInfo,
                        docker_context_dir: Path) -> Pipeline:
+        """
+        Builds a pipeline from the provided configuration.
+
+        Args:
+            dependencies: The names of the other components that the component depends on.
+            url_template: A url templated with the version number of the component, from which the release
+                 archive can be downloaded. In the string, \"{0}\" is the placholder for the version number.
+            image_name: The name of the docker image that will be built.
+            dist_info: Information about the distribution type (release or snapshot).
+            docker_context_dir: The path to the static (non-generated) resources that need
+                to be present in the docker build directory when the image is built.
+        """
+
         pass
 
 class DefaultPipelineBuilder(PipelineBuilder):
+    """
+    The default implementation of the `PipelineBuilder` interface. It generates two stages: the first either downloads
+    the release archive for the component (release builds) or creates a tar archive from the distribution directory on
+    the local filesystem (snapshot builds), the second builds the docker image for the component.
+
+    """
+
     def build_pipeline(self,
                        dependencies: Dict[str, ComponentConfig],
                        url_template: str,
