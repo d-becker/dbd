@@ -17,7 +17,8 @@ def get_image_builder(dependencies: List[str], cache_dir: Path) -> component_bui
     Returns a `ComponentImageBuilder` object that can build Hadoop docker images.
 
     Args:
-        dependencies: The names of the components that this component depends on.
+        dependencies: The names of the components that this component depends on. The dependencies are other
+            components for which the image needs to be built before building the image for this component.
         cache_dir: The path to the global cache directory.
     """
 
