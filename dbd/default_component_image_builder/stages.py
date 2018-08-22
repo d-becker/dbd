@@ -11,11 +11,11 @@ from pathlib import Path
 import shutil
 import tarfile
 import tempfile
+import urllib.request
 
 from typing import Dict, Iterable
 
 import docker
-import wget
 
 from default_component_image_builder.pipeline import EntryStage, FinalStage
 
@@ -73,7 +73,13 @@ class DefaultDownloader(Downloader):
     """
 
     def download(self, url: str, dest_path: Path) -> None:
-        wget.download(url, out=str(dest_path))
+        with urllib.request.urlopen(url) as response, dest_path.open(mode="wb") as outfile:
+            chunk_length = 250
+            chunk = response.read(chunk_length)
+
+            while len(chunk) > 0:
+                outfile.write(chunk)
+                chunk = response.read(chunk_length)
 
 class DownloadFileStage(EntryStage):
     """
