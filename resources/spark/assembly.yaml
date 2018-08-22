@@ -1,0 +1,5 @@
+dependencies:
+    - hadoop
+url: https://archive.apache.org/dist/spark/spark-{version}/spark-{version}-bin-without-hadoop.tgz
+version_command: "spark-shell --version"
+version_regex: "version (.*)\n"

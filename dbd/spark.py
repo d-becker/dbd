@@ -21,9 +21,6 @@ def get_image_builder(dependencies: List[str], cache_dir: Path) -> component_bui
         cache_dir: The path to the global cache directory.
     """
 
-    url_template = "https://archive.apache.org/dist/spark/spark-{0}/spark-{0}-bin-without-hadoop.tgz"
-    version_command = "spark-shell --version"
-    version_regex = "version (.*)\n"
     pipeline_builder = DefaultPipelineBuilder()
 
     cache = Cache(cache_dir)

@@ -20,10 +20,7 @@ def get_image_builder(dependencies: List[str], cache_dir: Path) -> component_bui
         dependencies: The names of the components that this component depends on.
         cache_dir: The path to the global cache directory.
     """
-
-    url_template = "http://xenia.sote.hu/ftp/mirrors/www.apache.org/hive/hive-{0}/apache-hive-{0}-bin.tar.gz"
-    version_command = "hive --version"
-    version_regex = "Hive (.*)\n"
+    
     pipeline_builder = DefaultPipelineBuilder()
 
     cache = Cache(cache_dir)

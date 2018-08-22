@@ -134,10 +134,7 @@ def get_image_builder(dependencies: List[str], cache_dir: Path) -> ComponentImag
         dependencies: The names of the components that this component depends on.
         cache_dir: The path to the global cache directory.
     """
-
-    url_template = "https://archive.apache.org//dist/oozie/{0}/oozie-{0}.tar.gz"
-    version_command = "bin/oozied.sh start && bin/oozie version"
-    version_regex = "version: (.*)\n"
+    
     pipeline_builder = OoziePipelineBuilder()
 
     cache = Cache(cache_dir)

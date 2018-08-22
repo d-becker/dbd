@@ -75,7 +75,7 @@ class DefaultPipelineBuilder(PipelineBuilder):
         if dist_info.dist_type == DistType.RELEASE:
             downloader = DefaultDownloader()
             version = dist_info.argument
-            url = url_template.format(version)
+            url = url_template.format(version=version)
             return DownloadFileStage("archive", downloader, url)
         else:
             assert dist_info.dist_type == DistType.SNAPSHOT

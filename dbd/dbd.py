@@ -16,6 +16,7 @@ import yaml
 
 import __main__
 
+from assembly import Assembly
 import graph
 import output
 
@@ -63,21 +64,26 @@ def _get_component_image_builders(components: List[str],
 
     return dict(zip(components, image_builders))
 
-def _read_dependencies_from_file(resource_path: Path, components: List[str], filename: str) -> Dict[str, List[str]]:
-    result: Dict[str, List[str]] = {}
+def _get_assembly_from_resource_files(resource_path: Path, components: List[str], filename: str) -> Dict[str, Assembly]:
+    result: Dict[str, Assembly] = {}
     for component in components:
-        dependencies_file = resource_path / component / filename
-        with dependencies_file.open() as file:
-            raw = file.read().split("\n")
-            without_whitespace = map(str.strip, raw)
-            without_empty = filter(lambda x: len(x) > 0, without_whitespace)
-            deps = list(without_empty)
-            result[component] = deps
+        assembly_file = resource_path / component / filename
+        with assembly_file.open() as file:
+            text = file.read()
+            d = yaml.load(text)
+
+            # TODO: Provide better error messages.
+            dependencies = d.get("dependencies", [])
+            url = d["url"]
+            version_command = d["version_command"]
+            version_regex = d["version_regex"]
+
+            result[component] = Assembly(dependencies, url, version_command, version_regex)
 
     return result
 
-def _get_component_dependencies(resource_path: Path, components: List[str]) -> Dict[str, List[str]]:
-    return _read_dependencies_from_file(resource_path, components, "dependencies.txt")
+def _get_component_assemblies(resource_path: Path, components: List[str]) -> Dict[str, Assembly]:
+    return _get_assembly_from_resource_files(resource_path, components, "assembly.yaml")
 
 def _get_initial_configuration(name: str) -> Configuration:
     timestamp: str = str(int(time.time()))

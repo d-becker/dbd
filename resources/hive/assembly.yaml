@@ -1,0 +1,5 @@
+dependencies:
+    - hadoop
+url: http://xenia.sote.hu/ftp/mirrors/www.apache.org/hive/hive-{version}/apache-hive-{version}-bin.tar.gz
+version_command: "hive --version"
+version_regex: "Hive (.*)\n"
