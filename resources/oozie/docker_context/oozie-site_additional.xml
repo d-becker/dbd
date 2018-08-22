@@ -1,5 +1,5 @@
+<!-- These configuration properties will be added to the default oozie-site.xml file. -->
 <configuration>
-        
     <property>
         <name>oozie.service.SparkConfigurationService.spark.configurations</name>
         <value>*=/opt/hadoop/etc/hadoop</value> 

@@ -1,4 +1,7 @@
 #/usr/bin/env bash
+
+# Borrowed from the flokkr project.
+
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 if [ -n "$ENSURE_NAMENODE_DIR" ]; then
    CLUSTERID_OPTS=""
