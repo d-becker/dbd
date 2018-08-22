@@ -1,4 +1,11 @@
 <configuration>
+        
+    <property>
+        <name>oozie.service.SparkConfigurationService.spark.configurations</name>
+        <value>*=/opt/hadoop/etc/hadoop</value> 
+        <!-- It is not optimal that this path is hard-coded. -->
+    </property>
+
     <property>
         <name>oozie.base.url</name>
         <value>http://oozieserver:11000/oozie</value>

@@ -1,0 +1,4 @@
+SPARK-DEFAULTS.CONF!CFG_spark.eventLog.enabled=true
+SPARK-DEFAULTS.CONF!CFG_spark.eventLog.dir=hdfs://namenode:9000/sparklog
+SPARK-DEFAULTS.CONF!CFG_spark.yarn.historyServer.address=sparkhistory:18080
+SPARK-DEFAULTS.CONF!CFG_spark.executor.instances=4

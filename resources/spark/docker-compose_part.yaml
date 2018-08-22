@@ -1,0 +1,11 @@
+services:
+   sparkhistory:
+      image: ${SPARK_IMAGE}
+      hostname: sparkhistory
+      command: ["./init.sh"]
+      ports:
+        - 18080:18080
+      env_file:
+        - ./compose-config
+      environment:
+        SPARK_HISTORY_OPTS: "-Dspark.history.fs.logDirectory=hdfs://namenode:9000/sparklog"
