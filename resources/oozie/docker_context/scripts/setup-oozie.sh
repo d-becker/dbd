@@ -30,9 +30,4 @@ sudo -u hadoop JAVA_HOME="$JAVA_HOME" hdfs dfs -chmod -R a+rwx /
 
 log "Write permissions on hdfs."
 
-if /opt/oozie/bin/oozied.sh start
-then
-    log "Started the Oozie server."
-else
-    log "Could not start the Oozie server."
-fi
+/opt/oozie/bin/oozied.sh run
