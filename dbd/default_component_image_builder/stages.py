@@ -113,7 +113,6 @@ class DownloadFileStage(EntryStage):
                      self._url)
 
         self._downloader.download(self._url, output_path)
-        print() # Printing a newline is needed because the wget downloader output does not end with one.
 
 class BuildDockerImageStage(FinalStage):
     """

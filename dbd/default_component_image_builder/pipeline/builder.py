@@ -7,11 +7,12 @@ This module contains the `PipelineBuilder` interface and a default implementatio
 from abc import ABCMeta, abstractmethod
 from pathlib import Path
 
-from typing import Dict
+from typing import Dict, Optional
 
 import docker
 
-from component_builder import ComponentConfig, DistInfo, DistType
+from component_builder import ComponentConfig, Configuration, DistInfo, DistType
+from default_component_image_builder.assembly import Assembly
 from default_component_image_builder.pipeline import EntryStage, Pipeline
 
 from default_component_image_builder.stages import (
@@ -27,8 +28,8 @@ class PipelineBuilder(metaclass=ABCMeta):
 
     @abstractmethod
     def build_pipeline(self,
-                       dependencies: Dict[str, ComponentConfig],
-                       url_template: str,
+                       built_config: Configuration,
+                       assembly: Assembly,
                        image_name: str,
                        dist_info: DistInfo,
                        docker_context_dir: Path) -> Pipeline:
@@ -36,9 +37,9 @@ class PipelineBuilder(metaclass=ABCMeta):
         Builds a pipeline from the provided configuration.
 
         Args:
-            dependencies: The names of the other components that the component depends on.
-            url_template: A url templated with the version number of the component, from which the release
-                 archive can be downloaded. In the string, \"{0}\" is the placholder for the version number.
+            built_config: A `Configuration` object that contains information about
+                previously built components and images. This should never be modified.
+            assembly: An object holding component-specific information.
             image_name: The name of the docker image that will be built.
             dist_info: Information about the distribution type (release or snapshot).
             docker_context_dir: The path to the static (non-generated) resources that need
@@ -56,12 +57,16 @@ class DefaultPipelineBuilder(PipelineBuilder):
     """
 
     def build_pipeline(self,
-                       dependencies: Dict[str, ComponentConfig],
-                       url_template: str,
+                       built_config: Configuration,
+                       assembly: Assembly,
                        image_name: str,
                        dist_info: DistInfo,
                        docker_context_dir: Path) -> Pipeline:
-        entry_stage = DefaultPipelineBuilder._get_entry_stage(dist_info, url_template)
+        entry_stage = DefaultPipelineBuilder._get_entry_stage(dist_info, assembly.url_template)
+
+        dependencies = {dependency : built_config.components[dependency]
+                        for dependency in assembly.dependencies}
+
         docker_image_stage = DefaultPipelineBuilder._get_docker_image_stage(docker.from_env(),
                                                                             image_name,
                                                                             dependencies,
@@ -70,11 +75,15 @@ class DefaultPipelineBuilder(PipelineBuilder):
         return Pipeline(entry_stage, [], docker_image_stage)
 
     @staticmethod
-    def _get_entry_stage(dist_info: DistInfo, url_template: str) -> EntryStage:
+    def _get_entry_stage(dist_info: DistInfo, url_template: Optional[str]) -> EntryStage:
         # pylint: disable=no-else-return
         if dist_info.dist_type == DistType.RELEASE:
             downloader = DefaultDownloader()
             version = dist_info.argument
+
+            if url_template is None:
+                raise ValueError("The `url` key is missing from the assembly but needed to download the component.")
+
             url = url_template.format(version=version)
             return DownloadFileStage("archive", downloader, url)
         else:

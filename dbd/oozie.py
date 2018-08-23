@@ -11,9 +11,10 @@ from pathlib import Path
 import subprocess
 import tarfile
 import tempfile
-from typing import Dict, List
+from typing import Any, Dict, List
 
-from component_builder import ComponentConfig, ComponentImageBuilder, DistInfo, DistType
+from component_builder import ComponentImageBuilder, Configuration, DistInfo, DistType
+from default_component_image_builder.assembly import Assembly
 from default_component_image_builder.builder import DefaultComponentImageBuilder
 from default_component_image_builder.cache import Cache
 from default_component_image_builder.pipeline import Pipeline, Stage
@@ -109,13 +110,13 @@ class OoziePipelineBuilder(PipelineBuilder):
         self._default_builder = DefaultPipelineBuilder()
 
     def build_pipeline(self,
-                       dependencies: Dict[str, ComponentConfig],
-                       url_template: str,
+                       built_config: Configuration,
+                       assembly: Assembly,
                        image_name: str,
                        dist_info: DistInfo,
                        docker_context_dir: Path) -> Pipeline:
-        pipeline = self._default_builder.build_pipeline(dependencies,
-                                                        url_template,
+        pipeline = self._default_builder.build_pipeline(built_config,
+                                                        assembly,
                                                         image_name,
                                                         dist_info,
                                                         docker_context_dir)
@@ -126,23 +127,20 @@ class OoziePipelineBuilder(PipelineBuilder):
 
         return pipeline
 
-def get_image_builder(dependencies: List[str], cache_dir: Path) -> ComponentImageBuilder:
+def get_image_builder(assembly: Dict[str, Any], cache_dir: Path) -> ComponentImageBuilder:
     """
     Returns a `ComponentImageBuilder` object that can build Oozie docker images.
 
     Args:
-        dependencies: The names of the components that this component depends on.
+        assembly: An object containing component-specific information such as dependencies.
         cache_dir: The path to the global cache directory.
     """
-    
+
+    assembly_object = Assembly.from_dict(assembly)
+    cache = Cache(cache_dir)
     pipeline_builder = OoziePipelineBuilder()
 
-    cache = Cache(cache_dir)
-
     return DefaultComponentImageBuilder("oozie",
-                                        dependencies,
-                                        url_template,
-                                        version_command,
-                                        version_regex,
+                                        assembly_object,
                                         cache,
                                         pipeline_builder)

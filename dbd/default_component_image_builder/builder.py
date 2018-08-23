@@ -18,6 +18,7 @@ from typing import Dict, Iterable, List, Tuple
 import docker
 
 from component_builder import ComponentConfig, ComponentImageBuilder, Configuration, DistType, DistInfo
+from default_component_image_builder.assembly import Assembly
 from default_component_image_builder.cache import Cache
 from default_component_image_builder.pipeline.builder import PipelineBuilder
 from default_component_image_builder.pipeline.executor import PipelineExecutor
@@ -46,10 +47,7 @@ class DefaultComponentImageBuilder(ComponentImageBuilder):
 
     def __init__(self,
                  component_name: str,
-                 dependencies: List[str],
-                 url_template: str,
-                 version_command: str,
-                 version_regex: str,
+                 assembly: Assembly,
                  cache: Cache,
                  pipeline_builder: PipelineBuilder) -> None:
         """
@@ -57,24 +55,14 @@ class DefaultComponentImageBuilder(ComponentImageBuilder):
 
         Args:
             component_name: The name of the component for which the image is built.
-            dependencies: The dependencies of the component.
-            url_template: A url templated with the version number of the component, from which the release
-                 archive can be downloaded. In the string, \"{0}\" is the placholder for the version number.
-            version_command: The command that should be run inside the built docker container
-                to retrieve its version number. The actual version number will be obtained by
-                matching `version_regex` against the output of this command.
-            version_regex: The regex that will be matched against the output
-                of `version_command` to retrieve the actual version number.
+            assembly: An object holding component-specific information.
             cache: The object from which cache locations can be queried.
             pipeline_builder: The pipeline builder to be used to generate the build stages.
 
         """
 
         self._name = component_name
-        self._dependencies = dependencies
-        self._url_template = url_template
-        self._version_command = version_command
-        self._version_regex = version_regex
+        self._assembly = assembly
         self._cache = cache
         self._pipeline_builder = pipeline_builder
 
@@ -84,7 +72,7 @@ class DefaultComponentImageBuilder(ComponentImageBuilder):
         return self._name
 
     def dependencies(self) -> List[str]:
-        return self._dependencies
+        return self._assembly.dependencies
 
     def build(self,
               component_config: Dict[str, str],
@@ -98,11 +86,8 @@ class DefaultComponentImageBuilder(ComponentImageBuilder):
 
         docker_context = built_config.resource_path / self.name() / "docker_context"
 
-        dependency_dict = {dependency : built_config.components[dependency]
-                           for dependency in self.dependencies()}
-
-        pipeline = self._pipeline_builder.build_pipeline(dependency_dict,
-                                                         self._url_template,
+        pipeline = self._pipeline_builder.build_pipeline(built_config,
+                                                         self._assembly,
                                                          image_name,
                                                          dist_info,
                                                          docker_context)
@@ -126,11 +111,19 @@ class DefaultComponentImageBuilder(ComponentImageBuilder):
         if dist_type == DistType.RELEASE:
             version = argument
         else:
+            if self._assembly.version_command is None:
+                raise ValueError(
+                    "The `version_command` key is missing from the assembly but needed to find out the version number.")
+
+            if self._assembly.version_regex is None:
+                raise ValueError(
+                    "The `version_regex` key is missing from the assembly but needed to find out the version number.")
+
             version = _find_out_version_from_image(self._docker_client,
                                                    image_name,
                                                    self.name(),
-                                                   self._version_command,
-                                                   self._version_regex)
+                                                   self._assembly.version_command,
+                                                   self._assembly.version_regex)
         return ComponentConfig(dist_type, version, image_name)
 
     def _get_image_name(self,

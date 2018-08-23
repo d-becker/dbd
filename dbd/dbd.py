@@ -16,7 +16,6 @@ import yaml
 
 import __main__
 
-from assembly import Assembly
 import graph
 import output
 
@@ -56,33 +55,29 @@ def _get_components(conf: Dict[str, Any]) -> List[str]:
     return list(conf["components"].keys())
 
 def _get_component_image_builders(components: List[str],
-                                  dependencies: Dict[str, List[str]],
+                                  assemblies: Dict[str, Dict[str, Any]],
                                   cache_dir: Path) -> Dict[str, ComponentImageBuilder]:
     modules = map(importlib.import_module, components)
-    image_builders = map(lambda module: module.__dict__["get_image_builder"](dependencies[module.__name__], cache_dir),
+    image_builders = map(lambda module: module.__dict__["get_image_builder"](assemblies[module.__name__], cache_dir),
                          modules)
 
     return dict(zip(components, image_builders))
 
-def _get_assembly_from_resource_files(resource_path: Path, components: List[str], filename: str) -> Dict[str, Assembly]:
-    result: Dict[str, Assembly] = {}
+def _get_assembly_from_resource_files(resource_path: Path,
+                                      components: List[str],
+                                      filename: str) -> Dict[str, Dict[str, Any]]:
+    result: Dict[str, Dict[str, Any]] = {}
     for component in components:
         assembly_file = resource_path / component / filename
         with assembly_file.open() as file:
             text = file.read()
-            d = yaml.load(text)
+            assembly_dictionary = yaml.load(text)
 
-            # TODO: Provide better error messages.
-            dependencies = d.get("dependencies", [])
-            url = d["url"]
-            version_command = d["version_command"]
-            version_regex = d["version_regex"]
-
-            result[component] = Assembly(dependencies, url, version_command, version_regex)
+            result[component] = assembly_dictionary
 
     return result
 
-def _get_component_assemblies(resource_path: Path, components: List[str]) -> Dict[str, Assembly]:
+def _get_component_assemblies(resource_path: Path, components: List[str]) -> Dict[str, Dict[str, Any]]:
     return _get_assembly_from_resource_files(resource_path, components, "assembly.yaml")
 
 def _get_initial_configuration(name: str) -> Configuration:
@@ -110,6 +105,20 @@ def _build_component_images(name: str,
 
     return resulting_configuration
 
+def _get_dependencies_from_assemblies(assemblies: Dict[str, Dict[str, Any]]) -> Dict[str, List[str]]:
+    dependencies: Dict[str, List[str]] = {}
+
+    for component, assembly in assemblies.items():
+        component_dependencies = assembly.get("dependencies", [])
+
+        if (not isinstance(component_dependencies, list)
+                or not all(map(lambda x: isinstance(x, str), component_dependencies))):
+            raise TypeError("The 'dependencies' key must be associated with a value of type `List[str]`.")
+
+        dependencies[component] = component_dependencies
+
+    return dependencies
+
 def _dependencies_without_configuration(components: List[str],
                                         dependencies: Dict[str, List[str]]) -> Set[str]:
     components_set = set(components)
@@ -134,7 +143,8 @@ def main() -> None:
 
     configuration = _get_initial_configuration(name)
 
-    dependencies = _get_component_dependencies(configuration.resource_path, components)
+    assemblies = _get_component_assemblies(configuration.resource_path, components)
+    dependencies = _get_dependencies_from_assemblies(assemblies)
 
     deps_without_config = _dependencies_without_configuration(components, dependencies)
     if len(deps_without_config) > 0:
@@ -146,7 +156,7 @@ def main() -> None:
     topologically_sorted_components = dag.get_topologically_sorted_nodes()
 
     cache_dir = Path(__main__.__file__).parent.resolve().parent / "cache"
-    image_builders = _get_component_image_builders(components, dependencies, cache_dir)
+    image_builders = _get_component_image_builders(components, assemblies, cache_dir)
 
     force_rebuild_components = _get_force_rebuild_components(args, components)
     output_configuration = _build_component_images(name,
