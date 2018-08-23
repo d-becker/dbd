@@ -20,6 +20,7 @@ import graph
 import output
 
 from component_builder import ComponentImageBuilder, Configuration
+import default_image_builder_module
 
 def _get_argument_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Create a directory which can be used by docker-compose " +
@@ -57,11 +58,21 @@ def _get_components(conf: Dict[str, Any]) -> List[str]:
 def _get_component_image_builders(components: List[str],
                                   assemblies: Dict[str, Dict[str, Any]],
                                   cache_dir: Path) -> Dict[str, ComponentImageBuilder]:
-    modules = map(importlib.import_module, components)
-    image_builders = map(lambda module: module.__dict__["get_image_builder"](assemblies[module.__name__], cache_dir),
-                         modules)
+    image_builders: Dict[str, ComponentImageBuilder] = {}
 
-    return dict(zip(components, image_builders))
+    for component in components:
+        assembly = assemblies[component]
+        image_builder: ComponentImageBuilder
+
+        try:
+            module = importlib.import_module(component)
+            image_builder = module.__dict__["get_image_builder"](assembly, cache_dir)
+        except ModuleNotFoundError:
+            image_builder = default_image_builder_module.get_image_builder(component, assembly, cache_dir)
+
+        image_builders[component] = image_builder
+
+    return image_builders
 
 def _get_assembly_from_resource_files(resource_path: Path,
                                       components: List[str],

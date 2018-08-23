@@ -54,55 +54,27 @@ may require multiple services, each of which runs in a separate container. For e
 types of containers: name node and data node. Furthermore, docker-compose makes it possible to replicate services and
 run them in multiple containers, for example there may be multiple data node containers in the dockerised cluster.
 
-## Implementing a component image builder
-This section describes what is needed to implement a component image builder - the interface through which the central
-part of the application interacts with the individual component image builders. This includes implementing the
-`component_builder.ComponentImageBuilder` interface, but that is not enough in itself as additional configuration and
-resource files need to be provided, too.
+## Adding a new component
+To add a new component that this tool can build, essentially two things are needed:
 
-Instead of directly implementing the `ComponentImageBuilder` interface, it is much easier to use the
-`default_component_image_builder.DefaultComponentImageBuilder` class, which is sufficient in most cases. For more information on  how it can be used, see its class documentation.
+* resource files in the appropriate location
+* a component image builder object, which implements the `component_builder.ComponentImageBuilder` interface.
 
-### The component module and the component\_builder.ComponentImageBuilder interface
-Each component image builder must provide a python module that has the same name as the component - exactly the same
-character string that is specified as the component name in the _BuildConfiguration_ file - therefore, component names
-must be valid python module names. These modules are found by their names and loaded dynamically by the main
-application, so they need to be available on the python path. The easiest way of achieving this is putting the component
-module source files in the same directory as the main application source.
+Depending on how the component image is to be built, it may be enough to provide the resource files and the tool will
+use the default component image building mechanism, which is to use the
+`default_component_image_builder.DefaultComponentImageBuilder` class, passing the data read from the resource files to
+it along with default values for its subcomponents. For more information on how it works, see its class documentation.
 
-The component modules must contain a function with the following signature:
-```
-def get_image_builder(dependencies: List[str], cache_dir: Path) -> component_builder.ComponentImageBuilder:
-	...
-```
-
-The `dependencies` parameter is a list with the names of the other components that the component depends on. This may
-for example mean that the docker image of the present component should be based on the image of another component, or
-that the present component needs to be built against the specified version of the dependency. The dependencies are passed to the image builder from the main application, which in turn reads them from a file - see the [resource file section](#resource-files) for more details.
-
-* Note that while building the components from source is avoided where possible and considered to be the user's
-  responsibility, sometimes it cannot be avoided. For example Oozie does not come with a built distribution and its
-  component builder implementation must build it from source. Also, the Oozie docker image is based on the Hadoop image,
-  therefore Oozie lists Hadoop as its dependency.
-  
-The main application builds a dependency graph from the dependencies of the components. If there is a cycle in the
-dependency graph, the application exits with an error message. Otherwise, the images are built in the correct order,
-meaning dependencies are alwalys built before the images that depend on them.
-
-The `cache_dir` parameter is a `pathlib.Path` object pointing to the root cache directory. The image builders are not
-required to use caching, but if they do, this directory should be used for it.
-
-To build the component images, the main application calls the `build` method of the `ComponentImageBuilder` objects. The
-`ComponentImageBuilder` of a component has access to configuration and build information of its dependencies (and other
-previously built components) through the `built_config` parameter. This includes attributes that may only be generated
-at build time, such as docker image names in case of snapshot builds.
+If you need to customise the component building process, read the [component image builder
+objects](#component-image-builder-objects) section. Even for custom build processes, the `DefaultComponentImageBuilder`
+class can be of use.
 
 ### Resource files
-The component builder implementations must also provide a number of resource files. The intended location of these files
-is in the `resources` directory, under a subdirectory that has the component's name. For example, the resource files of
-Oozie are located under `<repository_root>/resources/oozie`. The `ComponentImageBuilder` implementations, however,
-should not use these paths directly, but obtain the resource path from the `built_config` parameter passed to the
-`build` method. This makes the dependencies of the class more explicit and the code more flexible.
+The intended location of a component's resource files is in the `resources` directory, under a subdirectory that has the
+component's name. For example, the resource files of Oozie are located under `<repository_root>/resources/oozie`. The
+`ComponentImageBuilder` implementations, however, should not use these paths directly, but obtain the resource path from
+the `built_config` parameter passed to the `build` method. This makes the dependencies of the class more explicit and
+the code more flexible.
 
 The files that the main application needs are the following:
 
@@ -129,6 +101,21 @@ The files that the main application needs are the following:
         this command.
   * `version_regex`: The regex that will be matched against the output of `version_command` to retrieve the actual
         version number.
+		
+  Custom component image builders can require or accept different keys.
+
+The value associated with the `dependencies` key is a list with the names of the other components that the component
+depends on. This may for example mean that the docker image of the present component should be based on the image of
+another component, or that the present component needs to be built against the specified version of the dependency.
+
+* Note that while building the components from source is avoided where possible and considered to be the user's
+  responsibility, sometimes it cannot be avoided. For example Oozie does not come with a built distribution and its
+  component builder implementation must build it from source. Also, the Oozie docker image is based on the Hadoop image,
+  therefore Oozie lists Hadoop as its dependency.
+  
+The main application builds a dependency graph from the dependencies of the components. If there is a cycle in the
+dependency graph, the application exits with an error message. Otherwise, the images are built in the correct order,
+meaning dependencies are alwalys built before the images that depend on them.
  
 Although it is possible to implement a `ComponentImageBuilder` that works differently, the
 `DefaultComponentImageBuilder` class makes use of the following convention, so any additinal `ComponentImageBuilder`
@@ -140,3 +127,28 @@ the file(s) that will be generated by the build process. This directory is consi
 directly as the docker build directory. Instead, its contents should be copied to a new (ideally temporary) directory
 along with the generated files. For more information on how this is done by `DefaultComponentImageBuilder`, see its
 class documentation.
+
+### Component image builder objects
+If the default build process is not enough for your case, you can use a custom component image builder. In this case,
+you must provide a python module that has the same name as the component - exactly the same character string that is
+specified as the component name in the _BuildConfiguration_ file - therefore, component names must be valid python
+module names. These modules are found by their names and loaded dynamically by the main application, so they need to be
+available on the python path. The easiest way of achieving this is putting the component module source files in the same
+directory as the main application source. If no module is found for a component, the default component image building
+mechanism will be used.
+
+The component modules must contain a function with the following signature:
+```
+def get_image_builder(assembly: Dict[str, Any], cache_dir: Path) -> component_builder.ComponentImageBuilder:
+	...
+```
+
+The `assembly` parameter contains the key-value pairs that were read from the `assembly.yaml` file.
+
+The `cache_dir` parameter is a `pathlib.Path` object pointing to the root cache directory. The image builders are not
+required to use caching, but if they do, this directory should be used for it.
+
+To build the component images, the main application calls the `build` method of the `ComponentImageBuilder` objects. The
+`ComponentImageBuilder` of a component has access to configuration and build information of its dependencies (and other
+previously built components) through the `built_config` parameter. This includes attributes that may only be generated
+at build time, such as docker image names in case of snapshot builds.
