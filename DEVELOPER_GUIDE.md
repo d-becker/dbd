@@ -115,11 +115,24 @@ The files that the main application needs are the following:
   generated. The `docker-compose_part.yaml` files of the components will be merged by the main application. To reference
   the docker image name of the component, use variables of the form `${<COMPONENT_NAME_CAPITALISED>_IMAGE}`, for example
   for the Oozie image, `${OOZIE_IMAGE}` is used.
-* dependencies.txt: Contains the names of the other components that this component depends on, separated by newlines.
+* assembly.yaml: A yaml file that contains key-value pairs of component-specific information. 
+
+	One of the keys is `dependencies`, and the corresponding value is a list of the names of the other components that
+  this component depends on. If the key is missing, an empty list is assumed.
+  
+  The `DefaultComponentImageBuilder` class, which is the type of the image builders of all existing components, uses the
+  following additional keys:
+  * `url`: A url templated with the version number of the component, from which the release archive can be
+        downloaded. In the string, \"{version}\" is the placholder for the version number.
+  * `version_command`: The command that should be run inside the built docker container to retrieve the component's
+        version number. The actual version number will be obtained by matching `version_regex` against the output of
+        this command.
+  * `version_regex`: The regex that will be matched against the output of `version_command` to retrieve the actual
+        version number.
  
 Although it is possible to implement a `ComponentImageBuilder` that works differently, the
-`DefaultComponentImageBuilder` class, which is the type of the image builders of all existing components, makes use of
-the following convention, so any additinal `ComponentImageBuilder` should also do so:
+`DefaultComponentImageBuilder` class makes use of the following convention, so any additinal `ComponentImageBuilder`
+should also do so:
 
 In the resources directory of each component, there should be a a directory with the name `docker_context`. It should
 contain the Dockerfile and any files that need to be in the docker build directory when building the image, except for

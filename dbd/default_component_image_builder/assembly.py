@@ -58,10 +58,10 @@ class Assembly:
 
         Args:
             dependencies: The dependencies of the component.
-            url_template: A url templated with the version number of the component, from which the release
-                 archive can be downloaded. In the string, \"{0}\" is the placholder for the version number.
-            version_command: The command that should be run inside the built docker container
-                to retrieve its version number. The actual version number will be obtained by
+            url_template: A url templated with the version number of the component, from which the release archive
+                can be downloaded. In the string, \"{version}\" is the placholder for the version number.
+            version_command: The command that should be run inside the built docker container to retrieve
+                the component's version number. The actual version number will be obtained by
                 matching `version_regex` against the output of this command.
             version_regex: The regex that will be matched against the output
                 of `version_command` to retrieve the actual version number.
