@@ -21,7 +21,7 @@ from component_builder import ComponentConfig, ComponentImageBuilder, Configurat
 from default_component_image_builder.assembly import Assembly
 from default_component_image_builder.cache import Cache
 from default_component_image_builder.pipeline.builder import PipelineBuilder
-from default_component_image_builder.pipeline.executor import PipelineExecutor
+from default_component_image_builder.pipeline.executor import DefaultPipelineExecutor
 
 class DefaultComponentImageBuilder(ComponentImageBuilder):
     """
@@ -91,7 +91,7 @@ class DefaultComponentImageBuilder(ComponentImageBuilder):
                                                          image_name,
                                                          dist_info,
                                                          docker_context)
-        pipeline_executor = PipelineExecutor()
+        pipeline_executor = DefaultPipelineExecutor()
 
         if force_rebuild:
             pipeline_executor.execute_all(self.name(),

@@ -3,6 +3,7 @@
 """
 This module contains the pipeline executor.
 """
+from abc import ABCMeta, abstractmethod
 
 import tempfile
 from pathlib import Path
@@ -12,16 +13,56 @@ from component_builder import DistType
 from default_component_image_builder.cache import Cache
 from default_component_image_builder.pipeline import EntryStage, Pipeline, Stage
 
-class PipelineExecutor:
+class PipelineExecutor(metaclass=ABCMeta):
     """
-    Executes a pipeline, making the output of a stage become the input of the next stage at runtime.
+    An interface for executing a pipeline, making the output of a stage become the input of the next stage at runtime.
 
     Intermediate results are cached.
 
+    For more information, see the package level documentation.
+
+    """
+
+    @abstractmethod
+    def execute_all(self,
+                    component_name: str,
+                    dist_type: DistType,
+                    id_string: str,
+                    cache: Cache,
+                    pipeline: Pipeline) -> None:
+        """
+        Executes all stages of the provided pipeline, regardless of whether there are cached intermediate results.
+        Produced intermediate results are still written to the cache.
+
+        Args:
+            component_name: The name of the component that the pipeline builds the image for.
+            dist_type: The distribution type of the component (release or snapshot).
+            id_string: A string that identifies the build configuration - for example for
+                release builds, it could be the version number.
+            cache: The cache path locator to use to get the appropriate cache directories.
+            pipeline: The pipeline to execute.
+        """
+        pass
+
+    @abstractmethod
+    def execute_needed(self,
+                       component_name: str,
+                       dist_type: DistType,
+                       id_string: str,
+                       cache: Cache,
+                       pipeline: Pipeline) -> None:
+        """
+        Executes the pipeline from the latest stage the input of which is cached. The arguments are the same as for the
+        `execute_all` method.
+        """
+        pass
+
+class DefaultPipelineExecutor(PipelineExecutor):
+    """
+    The default implementation of `PipelineExecutor`.
+
     An attempt is made at writing the cache files atomically - the output of the stages is first
     written to a temporary file which is then renamed to the cached file.
-
-    For more information, see the package level documentation.
 
     """
 
@@ -42,32 +83,19 @@ class PipelineExecutor:
                     id_string: str,
                     cache: Cache,
                     pipeline: Pipeline) -> None:
-        """
-        Executes all stages of the provided pipeline, regardless of whether there are cached intermediate results.
-        Produced intermediate results are still written to the cache.
-
-        Args:
-            component_name: The name of the component that the pipeline builds the image for.
-            dist_type: The distribution type of the component (release or snapshot).
-            id_string: A string that identifies the build configuration - for example for
-                release builds, it could be the version number.
-            cache: The cache path locator to use to get the appropriate cache directories.
-            pipeline: The pipeline to execute.
-        """
-
         entry_stage = pipeline.entry_stage
         entry_output_path = cache.get_path(component_name, entry_stage.name(), dist_type, id_string)
 
-        PipelineExecutor._execute_output_stage_with_atomic_cache_entry(entry_stage, entry_output_path)
+        DefaultPipelineExecutor._execute_output_stage_with_atomic_cache_entry(entry_stage, entry_output_path)
 
         inner_stages_input_path = entry_output_path
-        PipelineExecutor._execute_from(component_name,
-                                       dist_type,
-                                       id_string,
-                                       cache,
-                                       pipeline,
-                                       inner_stages_input_path,
-                                       0)
+        DefaultPipelineExecutor._execute_from(component_name,
+                                              dist_type,
+                                              id_string,
+                                              cache,
+                                              pipeline,
+                                              inner_stages_input_path,
+                                              0)
 
     def execute_needed(self,
                        component_name: str,
@@ -75,12 +103,6 @@ class PipelineExecutor:
                        id_string: str,
                        cache: Cache,
                        pipeline: Pipeline) -> None:
-        """
-        Executes the pipeline from the latest stage the input of which is cached. The arguments are the same as for the
-        `execute_all` method.
-
-        """
-
         first_needed_stage_index_and_input_path = self._get_first_needed_stage_index_and_input_path(
             component_name,
             dist_type,
@@ -92,13 +114,13 @@ class PipelineExecutor:
             self.execute_all(component_name, dist_type, id_string, cache, pipeline)
         else:
             index, input_path = first_needed_stage_index_and_input_path
-            PipelineExecutor._execute_from(component_name,
-                                           dist_type,
-                                           id_string,
-                                           cache,
-                                           pipeline,
-                                           input_path,
-                                           index)
+            DefaultPipelineExecutor._execute_from(component_name,
+                                                  dist_type,
+                                                  id_string,
+                                                  cache,
+                                                  pipeline,
+                                                  input_path,
+                                                  index)
 
     @staticmethod
     def _get_first_needed_stage_index_and_input_path(component_name: str,
@@ -128,8 +150,8 @@ class PipelineExecutor:
         for stage in pipeline.inner_stages[start_index:]:
             output_path = cache.get_path(component_name, stage.name(), dist_type, id_string)
 
-            PipelineExecutor._execute_output_stage_with_atomic_cache_entry(
-                PipelineExecutor._OutputExecutableWrapper(stage, input_path),
+            DefaultPipelineExecutor._execute_output_stage_with_atomic_cache_entry(
+                DefaultPipelineExecutor._OutputExecutableWrapper(stage, input_path),
                 output_path)
 
             input_path = output_path

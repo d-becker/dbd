@@ -12,7 +12,7 @@ from default_component_image_builder.stages import (BuildDockerImageStage,
                                                     Downloader,
                                                     DownloadFileStage)
 
-from test.temp_dir_test_case import TmpDirTestCase
+from ..temp_dir_test_case import TmpDirTestCase
 
 class TestCreateTarfileStage(TmpDirTestCase):
     def test_execute_creates_tarfile(self) -> None:

@@ -9,7 +9,7 @@ from pathlib import Path
 
 from oozie import BuildOozieStage, ShellCommandExecutor
 
-from test.temp_dir_test_case import TmpDirTestCase
+from .temp_dir_test_case import TmpDirTestCase
 
 class MockShellCommandExecutor(ShellCommandExecutor):
     def run(self, command: List[str]) -> None:
