@@ -7,9 +7,17 @@ import tempfile
 from typing import List
 from pathlib import Path
 
-from oozie import BuildOozieStage, ShellCommandExecutor
+from component_builder import Configuration, DistInfo, DistType
+
+from default_component_image_builder.stages import (
+    BuildDockerImageStage,
+    CreateTarfileStage,
+    DownloadFileStage)
+
+from oozie import BuildOozieStage, OoziePipelineBuilder, ShellCommandExecutor
 
 from .temp_dir_test_case import TmpDirTestCase
+from .test_default_component_image_builder.test_pipeline.pipeline_builder_testcase import PipelineBuilderTestCase
 
 class MockShellCommandExecutor(ShellCommandExecutor):
     def run(self, command: List[str]) -> None:
@@ -42,3 +50,28 @@ class TestBuildOozieStage(TmpDirTestCase):
 
             with tarfile.open(dest_path, "w:gz") as tar:
                 tar.add(str(oozie_dir), arcname=oozie_dir.name)
+
+class TestOoziePipelineBuilder(PipelineBuilderTestCase):
+    def test_snapshot_mode(self) -> None:
+        arguments = self.get_default_arguments()
+
+        pipeline_builder = OoziePipelineBuilder()
+
+        pipeline = pipeline_builder.build_pipeline(**arguments)
+        
+        self.assertTrue(isinstance(pipeline.entry_stage, CreateTarfileStage))
+        self.assertEqual([], pipeline.inner_stages)
+        self.assertTrue(isinstance(pipeline.final_stage, BuildDockerImageStage))
+        
+    def test_oozie_builder_adds_build_oozie_stage_in_release_mode(self) -> None:
+        arguments = self.get_default_arguments()
+        arguments["dist_info"] = DistInfo(DistType.RELEASE, "5.0.0")
+
+        pipeline_builder = OoziePipelineBuilder()
+
+        pipeline = pipeline_builder.build_pipeline(**arguments)
+
+        self.assertTrue(isinstance(pipeline.entry_stage, DownloadFileStage))
+        self.assertEqual(1, len(pipeline.inner_stages))
+        self.assertTrue(isinstance(pipeline.inner_stages[0], BuildOozieStage))
+        self.assertTrue(isinstance(pipeline.final_stage, BuildDockerImageStage))
