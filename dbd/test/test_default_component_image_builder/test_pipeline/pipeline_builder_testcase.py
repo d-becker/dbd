@@ -7,12 +7,6 @@ from pathlib import Path
 
 from component_builder import Configuration, DistInfo, DistType
 from default_component_image_builder.assembly import Assembly
-from default_component_image_builder.pipeline.builder import DefaultPipelineBuilder
-
-from default_component_image_builder.stages import (
-    BuildDockerImageStage,
-    CreateTarfileStage,
-    DownloadFileStage)
 
 from ...temp_dir_test_case import TmpDirTestCase
 

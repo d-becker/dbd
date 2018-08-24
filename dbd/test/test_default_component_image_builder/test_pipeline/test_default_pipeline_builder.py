@@ -2,11 +2,7 @@
 
 # pylint: disable=missing-docstring
 
-from typing import Any, Dict
-from pathlib import Path
-
-from component_builder import Configuration, DistInfo, DistType
-from default_component_image_builder.assembly import Assembly
+from component_builder import DistInfo, DistType
 from default_component_image_builder.pipeline.builder import DefaultPipelineBuilder
 
 from default_component_image_builder.stages import (

@@ -7,7 +7,7 @@ import tempfile
 from typing import List
 from pathlib import Path
 
-from component_builder import Configuration, DistInfo, DistType
+from component_builder import DistInfo, DistType
 
 from default_component_image_builder.stages import (
     BuildDockerImageStage,
@@ -58,11 +58,11 @@ class TestOoziePipelineBuilder(PipelineBuilderTestCase):
         pipeline_builder = OoziePipelineBuilder()
 
         pipeline = pipeline_builder.build_pipeline(**arguments)
-        
+
         self.assertTrue(isinstance(pipeline.entry_stage, CreateTarfileStage))
         self.assertEqual([], pipeline.inner_stages)
         self.assertTrue(isinstance(pipeline.final_stage, BuildDockerImageStage))
-        
+
     def test_oozie_builder_adds_build_oozie_stage_in_release_mode(self) -> None:
         arguments = self.get_default_arguments()
         arguments["dist_info"] = DistInfo(DistType.RELEASE, "5.0.0")
