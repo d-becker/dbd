@@ -1,7 +1,0 @@
-Require a file for every component that lists the following:
- - dependencies (other components whose images need to be built before the current one)
- - url template
-
-Replace the wget dependency with standard library logic - it's easy (except for the status bar that we don't really need) and I'm not sure how well maintained the wget module is.
-
-Instead of the component_config dictionary, we could pass a more formalised class to the image builders.

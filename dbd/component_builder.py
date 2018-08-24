@@ -9,7 +9,7 @@ images for the components as well as classes that it depends on.
 from abc import ABCMeta, abstractmethod
 from enum import Enum, auto, unique
 from pathlib import Path
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 import __main__
 
@@ -115,8 +115,8 @@ class Configuration:
     def __init__(self,
                  name: str,
                  timestamp: str,
-                 repository: str = None,
-                 resource_path: Path = None) -> None:
+                 repository: Optional[str] = None,
+                 resource_path: Optional[Path] = None) -> None:
         """
         Creates a new `Configuration` object.
 
