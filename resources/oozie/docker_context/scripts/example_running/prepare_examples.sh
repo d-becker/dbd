@@ -1,3 +1,5 @@
+# This script will be thrown away.
+
 tar -xzf oozie-examples.tar.gz
 hdfs dfs -put examples examples
 
