@@ -1,7 +1,9 @@
 ARG BASE=30
 FROM flokkr/base:${BASE}
 RUN apk add --update --no-cache libstdc++ findutils ncurses python && rm -rf /var/cache/apk/*
-RUN adduser -h /opt/ -s /bin/bash -G flokkr -D hadoop && chown hadoop /opt
+RUN adduser -h /opt/ -s /bin/bash -G flokkr -D hadoop && chown hadoop /opt \
+    && addgroup supergroup \
+    && adduser hadoop supergroup
 USER hadoop
 VOLUME /data
 RUN sudo chown hadoop /data

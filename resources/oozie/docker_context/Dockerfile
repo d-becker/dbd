@@ -8,7 +8,6 @@ WORKDIR /opt
 COPY ${GENERATED_DIR}/oozie.tar.gz /opt
 RUN tar zxf oozie.tar.gz && rm oozie.tar.gz && mv oozie* oozie
 RUN adduser -h /opt/oozie -s /bin/bash -G flokkr -D oozie \
-    && addgroup supergroup \
     && adduser oozie supergroup \
     && chown -R oozie /opt/oozie \
     && passwd -d oozie
