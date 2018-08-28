@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+# TODO: This file should be put into a separete "Test Oozie examples" repository".
+
 from pathlib import Path
 
 from typing import Dict, List, Tuple, Union
@@ -12,10 +14,21 @@ cli_options["all"] = ["-DnameNode=hdfs://namenode:9000",
                       "-DresourceManager=resourcemanager:8032"]
 cli_options["hive2"] = ["-DjdbcURL=jdbc:hive2://hiveserver2:10000/default"]
 
-blacklist: List[str] = []
+blacklist: List[str] = ["hcatalog"]
 
 example_dir = Path("~/examples/apps").expanduser()
 
+# TODO: Turn it into a generator.
+def get_all_example_dirs(example_dir: Path) -> List[Path]:
+    result: List[Path] = []
+    for child_dir in example_dir.iterdir():
+        if (child_dir.is_dir()
+            and (child_dir / "job.properties").exists()):
+            result.append(child_dir)
+
+    return result
+
+# TODO: Turn this into a filter.
 def get_workflow_example_dirs(example_dir: Path) -> List[Path]:
     result: List[Path] = []
     for child_dir in example_dir.iterdir():
@@ -123,7 +136,8 @@ def print_report(results: Dict[str, str]):
         print("{}:\t{}".format(test, results[test]))
 
 def main() -> None:
-    example_dirs = get_workflow_example_dirs(example_dir)
+    # example_dirs = get_workflow_example_dirs(example_dir)
+    example_dirs = get_all_example_dirs(example_dir)
     results = run_examples(example_dirs, 1, 60)
     print_report(results)
 
