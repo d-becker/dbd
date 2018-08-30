@@ -1,33 +1,57 @@
 #!/bin/bash
 
-python3 scripts/xmlcombine.py /opt/oozie/conf/hadoop-conf/core-site.xml /opt/hadoop/etc/hadoop/core-site.xml > tmp.xml
-mv tmp.xml /opt/oozie/conf/hadoop-conf/core-site.xml
-
 function log {
         local message=$1
         echo "$message" >> docker_oozie_logs.txt
 }
 
-log "Successfully copied the contents of the Hadoop core-site.xml to the Oozie configuration."
+function merge_hadoop_core_site_xml_with_oozie_core_site_xml {
+    python3 scripts/xmlcombine.py /opt/oozie/conf/hadoop-conf/core-site.xml /opt/hadoop/etc/hadoop/core-site.xml > tmp.xml
+    mv tmp.xml /opt/oozie/conf/hadoop-conf/core-site.xml
 
-while [ "$(hdfs dfsadmin -report)" = "" ]
-do
-    sleep 0.5
-done
+    log "Successfully copied the contents of the Hadoop core-site.xml to the Oozie configuration."
+}
 
-sudo -u hadoop JAVA_HOME="$JAVA_HOME" hdfs dfs -mkdir /user
-sudo -u hadoop JAVA_HOME="$JAVA_HOME" hdfs dfs -mkdir /user/oozie
-sudo -u hadoop JAVA_HOME="$JAVA_HOME" hdfs dfs -chown -R oozie:oozie /user/oozie
-sudo -u hadoop JAVA_HOME="$JAVA_HOME" hdfs dfs -chmod -R a+w /
+function wait_for_hadoop {
+    while [ "$(hdfs dfsadmin -report)" = "" ]
+    do
+        sleep 0.5
+    done
 
-log "Successfully set up hdfs user directory."
+    log "Hdfs is up and running."
+}
 
-/opt/oozie/bin/oozie-setup.sh sharelib create -fs hdfs://namenode:9000
+function set_up_hdfs_oozie_directory {
+    sudo -u hadoop JAVA_HOME="$JAVA_HOME" hdfs dfs -mkdir /user
+    sudo -u hadoop JAVA_HOME="$JAVA_HOME" hdfs dfs -mkdir /user/oozie
+    sudo -u hadoop JAVA_HOME="$JAVA_HOME" hdfs dfs -chown -R oozie:oozie /user/oozie
+    sudo -u hadoop JAVA_HOME="$JAVA_HOME" hdfs dfs -chmod -R a+w /
 
-log "Successfully uploaded the sharelib."
+    log "Successfully set up hdfs user directory."
+}
 
-sudo -u hadoop JAVA_HOME="$JAVA_HOME" hdfs dfs -chmod -R a+rwx /
+function upload_sharelib {
+    /opt/oozie/bin/oozie-setup.sh sharelib create -fs hdfs://namenode:9000
 
-log "Write permissions on hdfs."
+    log "Successfully uploaded the sharelib."
+}
 
-/opt/oozie/bin/oozied.sh run
+function set_write_permissions_on_hdfs {
+    sudo -u hadoop JAVA_HOME="$JAVA_HOME" hdfs dfs -chmod -R a+rwx /
+
+    log "Write permissions on hdfs."
+
+}
+
+function start_oozie {
+    log "Starting the Oozie server."
+
+    /opt/oozie/bin/oozied.sh run
+}
+
+merge_hadoop_core_site_xml_with_oozie_core_site_xml
+wait_for_hadoop
+set_up_hdfs_oozie_directory
+upload_sharelib
+set_write_permissions_on_hdfs
+start_oozie
