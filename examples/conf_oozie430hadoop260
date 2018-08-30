@@ -1,0 +1,6 @@
+name: oozie430hadoop260
+components:
+  hadoop:
+     snapshot: ~/hadoop-2.6.0
+  oozie:
+    release: 4.3.0

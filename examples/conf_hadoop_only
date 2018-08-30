@@ -1,0 +1,4 @@
+name: hadoop_only
+components:
+  hadoop:
+    release: 2.6.5

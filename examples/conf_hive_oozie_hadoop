@@ -1,0 +1,8 @@
+name: hive
+components:
+  hadoop:
+    release: 2.6.5
+  oozie:
+    release: 5.0.0
+  hive:
+    release: 1.2.2

@@ -1,0 +1,4 @@
+name: hadoop_only_snapshot
+components:
+  hadoop:
+     snapshot: ~/hadoop-2.6.0

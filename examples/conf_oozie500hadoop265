@@ -1,0 +1,6 @@
+name: oozie500hadoop265
+components:
+  hadoop:
+   release: 2.6.5
+  oozie:
+    release: 5.0.0

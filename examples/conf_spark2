@@ -1,0 +1,8 @@
+name: spark2
+components:
+  hadoop:
+    release: 2.6.5
+  spark:
+    release: 2.3.0
+  oozie:
+    release: 5.0.0
