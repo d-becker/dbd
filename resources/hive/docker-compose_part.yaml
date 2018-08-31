@@ -2,9 +2,9 @@ services:
    metastoredb:
      image: postgres
      environment:
+       POSTGRES_USER: hive
        POSTGRES_PASSWORD: rootpwd
        POSTGRES_DB: metastore
-       POSTGRES_USER: hive
    metastore:
      image: ${HIVE_IMAGE}
      command: ["hive","--service", "metastore"]

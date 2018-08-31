@@ -8,4 +8,4 @@ services:
       env_file:
         - ./compose-config
       environment:
-        SPARK_HISTORY_OPTS: "-Dspark.history.fs.logDirectory=hdfs://namenode:9000/sparklog"
+        SPARK_HISTORY_OPTS: "-Dspark.history.fs.logDirectory=hdfs://namenode:9000/sparklog" # Spark log directory in HDFS
