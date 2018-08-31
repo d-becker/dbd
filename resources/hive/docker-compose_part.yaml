@@ -16,6 +16,6 @@ services:
      environment:
         HADOOP_CONF_DIR: /opt/hive/conf
      ports:
-        - 10002:10002
+        - 10002:10002 # HiveServer2 webui
      env_file:
         - ./compose-config

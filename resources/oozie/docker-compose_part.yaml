@@ -2,11 +2,9 @@ services:
    oozieserver:
       image: ${OOZIE_IMAGE}
       command: ["/bin/bash", "scripts/setup-oozie.sh"]
-      tty: true
       hostname: oozieserver
       ports:
-        - 11000:11000
-        - 8089:8088
+        - 11000:11000 # Oozie webui
       env_file:
         - ./compose-config
    historyserver:
