@@ -11,36 +11,7 @@ from typing import Any, Dict, List
 import yaml
 
 from component_builder import Configuration, DistType
-
-def _extend_docker_compose_dict(original: Dict[str, Dict[str, Any]], other: Dict[str, Dict[str, Any]]) -> None:
-    for key in other.keys():
-        if key not in original:
-            original[key] = dict()
-
-        original_inner_dict: Dict[str, Any] = original[key]
-        other_inner_dict: Dict[str, Any] = other[key]
-
-        intersection = set(original_inner_dict.keys()).intersection(set(other_inner_dict.keys()))
-
-        if len(intersection) > 0:
-            raise ValueError("Multiple definitions of the following in section {}: {}.".format(key, intersection))
-
-        original_inner_dict.update(other_inner_dict)
-
-def _generate_docker_compose_file_text(sorted_components: List[str], resource_path: Path) -> str:
-    document_body: Dict[str, Dict[str, Any]] = dict()
-
-    for component in sorted_components:
-        file_path = resource_path / component / "docker-compose_part.yaml"
-
-        if file_path.exists():
-            with file_path.open() as file:
-                component_docker_compose_dict = yaml.load(file)
-                _extend_docker_compose_dict(document_body, component_docker_compose_dict)
-
-    document: Dict[str, Any] = {"version": "3"}
-    document.update(document_body)
-    return yaml.dump(document, default_style=None)
+import output.docker_compose_generator
 
 def _generate_compose_config_file_text(sorted_components: List[str], resource_path: Path) -> str:
     text = io.StringIO()
@@ -88,12 +59,29 @@ def _generate_env_file_text(configuration: Configuration) -> str:
 
     return text.getvalue()
 
-def generate_output(sorted_components: List[str], configuration: Configuration, output_location: Path) -> None:
+def _generate_docker_compose_file_text(input_component_config: Dict[str, Any], resource_path: Path) -> str:
+    docker_compose_parts = {}
+    for component in input_component_config:
+        file_path = resource_path / component / "docker-compose_part.yaml"
+        with file_path.open() as file:
+            docker_compose_part = yaml.load(file)
+            docker_compose_parts[component] = docker_compose_part
+
+    customised_services = {component : value.get("services", {})
+                           for component, value in input_component_config.items()}
+
+    docker_compose_dict = output.docker_compose_generator.generate_docker_compose_file_dict(docker_compose_parts,
+                                                                                            customised_services)
+    return yaml.dump(docker_compose_dict, default_style=None)
+
+def generate_output(input_config: Dict[str, Any],
+                    configuration: Configuration,
+                    output_location: Path) -> None:
     """
-    Generates the output of the configuration building process.
+    Generates the output of the building process.
 
     Args:
-        sorted_components: The components that were present in the configuration in topologically sorted order.
+        input_conf: The dictionary that contains the contents of the `BuildConfiguration` file, provided by the user.
         configuration: The `Configuration` object that contains the information about the configuration build.
         output_location: The directory in which the output should be generated.
 
@@ -101,6 +89,8 @@ def generate_output(sorted_components: List[str], configuration: Configuration, 
         ValueError: If `output_location` does not point to an existing directory.
 
     """
+
+    components = input_config["components"].keys()
 
     if not output_location.is_dir():
         raise ValueError("The provided output location is not a directory.")
@@ -116,10 +106,11 @@ def generate_output(sorted_components: List[str], configuration: Configuration, 
         env_file_text = _generate_env_file_text(configuration)
         file.write(env_file_text)
 
-    docker_compose_file_text = _generate_docker_compose_file_text(sorted_components, configuration.resource_path)
+    docker_compose_file_text = _generate_docker_compose_file_text(input_config["components"],
+                                                                  configuration.resource_path)
     with (out / "docker-compose.yaml").open("w") as docker_compose_file:
         docker_compose_file.write(docker_compose_file_text)
 
-    compose_config_file_text = _generate_compose_config_file_text(sorted_components, configuration.resource_path)
+    compose_config_file_text = _generate_compose_config_file_text(components, configuration.resource_path)
     with (out / "compose-config").open("w") as compose_config_file:
         compose_config_file.write(compose_config_file_text)

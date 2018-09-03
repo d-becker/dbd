@@ -32,6 +32,10 @@ meaning of these keys is as follows:
   done manually by the user. Implementations are allowed to cache intermediate results and images.
 * Specifying none or both of `release` and `snapshot` results in an error.
 
+In the components dictionary, it is also possible to customise the services belonging to the components (see the
+README.md file in this repository), but that is handled by the main application when generating the output files, not
+the component image builders.
+
 ### Example
 The following is an example _BuildConfiguration_ file:
 

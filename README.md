@@ -5,6 +5,8 @@ This tool’s aim is to make it easy to set up a working dockerized big data inf
 components (Hadoop, Hive, Oozie etc.) can be set individually, and even unreleased snapshot builds can be used. This
 makes integration testing a lot less cumbersome.
 
+The tool takes a configuration file called the _BuildConfiguration_ as input, builds the required docker images and produces a directory with a docker-compose file that can be used to start up the dockerised cluster.
+
 The docker images built by dbd and many of the scripts building them are based on the [flokkr
 project](https://github.com/flokkr).
 
@@ -26,6 +28,28 @@ Each component takes a dictionary of configuration options. The set of recognise
 component, but all of them recognise `release` and `snapshot`. If `release` is specified, the corresponding value is a
 release version number - for `snapshot`, the value is a local filesystem path to an already built
 distribution. Specifying both results in an error.
+
+It is also possible to specify configuration options for the services belonging to the components. These options
+overwrite the default options if they exist. Adding new services, however, is not possible. The following example
+illustrates this:
+
+```
+name: oozie500hadoop265
+components:
+  hadoop:
+    release: 2.6.5
+  oozie:
+    release: 5.0.0
+	services:
+	  oozieserver: # One of the services belonging to the Oozie component
+	    ports:
+		  - 11000:11000
+		  - 11002:11002
+```
+
+This will map ports 11000 and 11002 in the container to the same ports on the host machine. To find out what services
+each component uses and what the default configuration is, consult the components' resource files - you can find more
+information about them in the DEVELOPER_GUIDE.md file in this repository.
 
 When you have created the _BuildConfiguration_ file, run the following in a terminal from the root of this repository:
 
