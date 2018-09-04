@@ -5,6 +5,7 @@ This module contains the pipeline executor.
 """
 from abc import ABCMeta, abstractmethod
 
+import shutil
 import tempfile
 from pathlib import Path
 from typing import Optional, Tuple, Union
@@ -169,4 +170,4 @@ class DefaultPipelineExecutor(PipelineExecutor):
             stage.execute(tmp_file_path)
 
             output_path.parent.mkdir(parents=True, exist_ok=True)
-            tmp_file_path.rename(output_path)
+            shutil.move(tmp_file_path, output_path)
