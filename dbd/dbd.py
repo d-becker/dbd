@@ -32,6 +32,7 @@ def _get_argument_parser() -> argparse.ArgumentParser:
     parser.add_argument("-f", "--force", metavar="COMPONENT", nargs="*",
                         help="force rebuilding the images of the given COMPONENTs even if suitable " +
                         "images already exist; if specified without arguments, all images are rebuilt")
+    parser.add_argument("-c", "--cache", metavar="CACHE_DIR", help="The directory used to cache the build stages.")
 
     return parser
 
@@ -39,6 +40,16 @@ def _parse_yaml(filename: str) -> Dict[str, Any]:
     with open(filename) as file:
         text = file.read()
         return yaml.load(text)
+
+def _get_cache_dir(args: argparse.Namespace) -> Path:
+    if "cache" not in args:
+        default_cache_dir = Path(__main__.__file__).parent.resolve().parent / "cache"
+        logging.info("Using the default cache directory: %s.", default_cache_dir)
+        return default_cache_dir
+
+    cache_dir = Path(args.cache).expanduser().resolve()
+    logging.info("Using cache directory: %s", cache_dir)
+    return cache_dir
 
 def _get_force_rebuild_components(args: argparse.Namespace, components: List[str]) -> List[str]:
     force_rebuild_components: List[str]
@@ -166,7 +177,7 @@ def main() -> None:
     dag = graph.build_graph_from_dependencies(dependencies)
     topologically_sorted_components = dag.get_topologically_sorted_nodes()
 
-    cache_dir = Path(__main__.__file__).parent.resolve().parent / "cache"
+    cache_dir = _get_cache_dir(args)
     image_builders = _get_component_image_builders(components, assemblies, cache_dir)
 
     force_rebuild_components = _get_force_rebuild_components(args, components)
