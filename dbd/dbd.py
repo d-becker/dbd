@@ -32,7 +32,7 @@ def _get_argument_parser() -> argparse.ArgumentParser:
     parser.add_argument("-f", "--force", metavar="COMPONENT", nargs="*",
                         help="force rebuilding the images of the given COMPONENTs even if suitable " +
                         "images already exist; if specified without arguments, all images are rebuilt")
-    parser.add_argument("-c", "--cache", metavar="CACHE_DIR", help="The directory used to cache the build stages.")
+    parser.add_argument("-c", "--cache", metavar="CACHE_DIR", help="the directory used to cache the build stages")
 
     return parser
 
@@ -42,7 +42,7 @@ def _parse_yaml(filename: str) -> Dict[str, Any]:
         return yaml.load(text)
 
 def _get_cache_dir(args: argparse.Namespace) -> Path:
-    if "cache" not in args:
+    if args.cache is None:
         default_cache_dir = Path(__main__.__file__).parent.resolve().parent / "cache"
         logging.info("Using the default cache directory: %s.", default_cache_dir)
         return default_cache_dir
