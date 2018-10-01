@@ -223,7 +223,7 @@ def _find_out_version_from_image(docker_client: docker.DockerClient,
     match = re.search(regex, response)
 
     if match is None:
-        raise ValueError("No {} version found.".format(component_name))
+        raise ValueError("No {} version found. Response from container: {}.".format(component_name, response))
 
     version = match.group(1)
     return version
