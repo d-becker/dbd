@@ -17,7 +17,7 @@ from typing import Dict, Iterable
 
 import docker
 
-from default_component_image_builder.pipeline import EntryStage, FinalStage
+from dbd.default_component_image_builder.pipeline import EntryStage, FinalStage
 
 class CreateTarfileStage(EntryStage):
     """

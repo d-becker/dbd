@@ -10,9 +10,9 @@ import tempfile
 from pathlib import Path
 from typing import Optional, Tuple, Union
 
-from component_builder import DistType
-from default_component_image_builder.cache import Cache
-from default_component_image_builder.pipeline import EntryStage, Pipeline, Stage
+from dbd.component_builder import DistType
+from dbd.default_component_image_builder.cache import Cache
+from dbd.default_component_image_builder.pipeline import EntryStage, Pipeline, Stage
 
 class PipelineExecutor(metaclass=ABCMeta):
     """

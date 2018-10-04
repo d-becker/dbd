@@ -2,10 +2,10 @@
 
 # pylint: disable=missing-docstring
 
-from component_builder import DistInfo, DistType
-from default_component_image_builder.pipeline.builder import DefaultPipelineBuilder
+from dbd.component_builder import DistInfo, DistType
+from dbd.default_component_image_builder.pipeline.builder import DefaultPipelineBuilder
 
-from default_component_image_builder.stages import (
+from dbd.default_component_image_builder.stages import (
     BuildDockerImageStage,
     CreateTarfileStage,
     DownloadFileStage)

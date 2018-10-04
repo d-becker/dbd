@@ -7,10 +7,10 @@ from pathlib import Path
 
 import docker
 
-from default_component_image_builder.stages import (BuildDockerImageStage,
-                                                    CreateTarfileStage,
-                                                    Downloader,
-                                                    DownloadFileStage)
+from dbd.default_component_image_builder.stages import (BuildDockerImageStage,
+                                                        CreateTarfileStage,
+                                                        Downloader,
+                                                        DownloadFileStage)
 
 from ..temp_dir_test_case import TmpDirTestCase
 

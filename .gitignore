@@ -8,3 +8,6 @@ group_vars
 *~
 *.iml
 cache
+build
+dbd.egg-info
+dist

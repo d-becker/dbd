@@ -13,12 +13,12 @@ import tarfile
 import tempfile
 from typing import Any, Dict, List
 
-from component_builder import ComponentImageBuilder, Configuration, DistInfo, DistType
-from default_component_image_builder.assembly import Assembly
-from default_component_image_builder.builder import DefaultComponentImageBuilder
-from default_component_image_builder.cache import Cache
-from default_component_image_builder.pipeline import Pipeline, Stage
-from default_component_image_builder.pipeline.builder import DefaultPipelineBuilder, PipelineBuilder
+from dbd.component_builder import ComponentImageBuilder, Configuration, DistInfo, DistType
+from dbd.default_component_image_builder.assembly import Assembly
+from dbd.default_component_image_builder.builder import DefaultComponentImageBuilder
+from dbd.default_component_image_builder.cache import Cache
+from dbd.default_component_image_builder.pipeline import Pipeline, Stage
+from dbd.default_component_image_builder.pipeline.builder import DefaultPipelineBuilder, PipelineBuilder
 
 class ShellCommandExecutor(metaclass=ABCMeta):
     """

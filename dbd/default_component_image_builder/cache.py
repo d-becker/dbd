@@ -7,7 +7,7 @@ This module contains a class which can be used to query cache locations that dep
 from typing import Dict, Optional
 from pathlib import Path
 
-from component_builder import DistType
+from dbd.component_builder import DistType
 
 class Cache:
     """

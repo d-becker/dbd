@@ -5,8 +5,8 @@
 from typing import Any, Dict
 from pathlib import Path
 
-from component_builder import Configuration, DistInfo, DistType
-from default_component_image_builder.assembly import Assembly
+from dbd.component_builder import Configuration, DistInfo, DistType
+from dbd.default_component_image_builder.assembly import Assembly
 
 from ...temp_dir_test_case import TmpDirTestCase
 

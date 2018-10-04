@@ -5,10 +5,10 @@
 from typing import cast
 from pathlib import Path
 
-from component_builder import DistType
-from default_component_image_builder.cache import Cache
-from default_component_image_builder.pipeline import EntryStage, FinalStage, Pipeline, Stage
-from default_component_image_builder.pipeline.executor import DefaultPipelineExecutor
+from dbd.component_builder import DistType
+from dbd.default_component_image_builder.cache import Cache
+from dbd.default_component_image_builder.pipeline import EntryStage, FinalStage, Pipeline, Stage
+from dbd.default_component_image_builder.pipeline.executor import DefaultPipelineExecutor
 
 from ...temp_dir_test_case import TmpDirTestCase
 

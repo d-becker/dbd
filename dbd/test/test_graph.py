@@ -6,7 +6,7 @@ import unittest
 
 from typing import Dict, List
 
-from graph import build_graph_from_dependencies, DAG
+from dbd.graph import build_graph_from_dependencies, DAG
 
 class TestDAG(unittest.TestCase):
     def test_nodes(self) -> None:

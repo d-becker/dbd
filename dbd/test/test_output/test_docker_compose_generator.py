@@ -6,7 +6,7 @@ from typing import Any, Dict, Union
 
 import unittest
 
-import output.docker_compose_generator
+import dbd.output.docker_compose_generator
 
 class TestGenerateDockerComposeFileDict(unittest.TestCase):
     def setUp(self) -> None:
@@ -44,7 +44,7 @@ class TestGenerateDockerComposeFileDict(unittest.TestCase):
             "historyserver" : {"ports" : ["8000:8000"]}
         }
 
-        result = output.docker_compose_generator.generate_docker_compose_file_dict(self.docker_compose_parts,
+        result = dbd.output.docker_compose_generator.generate_docker_compose_file_dict(self.docker_compose_parts,
                                                                                    customisations)
 
         expected_namenode = {"image": "${HADOOP_IMAGE}",
@@ -67,5 +67,5 @@ class TestGenerateDockerComposeFileDict(unittest.TestCase):
         }
 
         with self.assertRaises(ValueError):
-            output.docker_compose_generator.generate_docker_compose_file_dict(self.docker_compose_parts,
-                                                                              customisations)
+            dbd.output.docker_compose_generator.generate_docker_compose_file_dict(self.docker_compose_parts,
+                                                                                  customisations)

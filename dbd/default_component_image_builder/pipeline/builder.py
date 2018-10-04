@@ -11,11 +11,11 @@ from typing import Dict, Optional
 
 import docker
 
-from component_builder import ComponentConfig, Configuration, DistInfo, DistType
-from default_component_image_builder.assembly import Assembly
-from default_component_image_builder.pipeline import EntryStage, Pipeline
+from dbd.component_builder import ComponentConfig, Configuration, DistInfo, DistType
+from dbd.default_component_image_builder.assembly import Assembly
+from dbd.default_component_image_builder.pipeline import EntryStage, Pipeline
 
-from default_component_image_builder.stages import (
+from dbd.default_component_image_builder.stages import (
     BuildDockerImageStage,
     CreateTarfileStage,
     DefaultDownloader,

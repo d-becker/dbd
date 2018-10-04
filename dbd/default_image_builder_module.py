@@ -7,15 +7,15 @@ This module contains the function that creates `DefaultComponentImageBuilder`s f
 from typing import Any, Dict
 from pathlib import Path
 
-import component_builder
-from default_component_image_builder.builder import DefaultComponentImageBuilder
-from default_component_image_builder.assembly import Assembly
-from default_component_image_builder.cache import Cache
-from default_component_image_builder.pipeline.builder import DefaultPipelineBuilder
+import dbd.component_builder
+from dbd.default_component_image_builder.builder import DefaultComponentImageBuilder
+from dbd.default_component_image_builder.assembly import Assembly
+from dbd.default_component_image_builder.cache import Cache
+from dbd.default_component_image_builder.pipeline.builder import DefaultPipelineBuilder
 
 def get_image_builder(component_name: str,
                       assembly: Dict[str, Any],
-                      cache_dir: Path) -> component_builder.ComponentImageBuilder:
+                      cache_dir: Path) -> dbd.component_builder.ComponentImageBuilder:
     """
     Returns a `DefaultComponentImageBuilder` object for the given component.
 

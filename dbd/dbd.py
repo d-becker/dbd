@@ -16,11 +16,11 @@ import yaml
 
 import __main__
 
-import graph
-import output
+import dbd.graph
+import dbd.output
 
-from component_builder import ComponentImageBuilder, Configuration
-import default_image_builder_module
+from dbd.component_builder import ComponentImageBuilder, Configuration
+import dbd.default_image_builder_module
 
 def _get_argument_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Create a directory which can be used by docker-compose " +
@@ -79,7 +79,7 @@ def _get_component_image_builders(components: List[str],
             module = importlib.import_module(component)
             image_builder = module.__dict__["get_image_builder"](assembly, cache_dir)
         except ModuleNotFoundError:
-            image_builder = default_image_builder_module.get_image_builder(component, assembly, cache_dir)
+            image_builder = dbd.default_image_builder_module.get_image_builder(component, assembly, cache_dir)
 
         image_builders[component] = image_builder
 
@@ -156,6 +156,7 @@ def main() -> None:
     The entry point to the application. Run on the command line with `--help` to get information on usage.
     """
 
+    logging.basicConfig(level=logging.INFO)
     parser = _get_argument_parser()
     args = parser.parse_args()
 
@@ -174,7 +175,7 @@ def main() -> None:
               "by other components: {}".format(str(list(deps_without_config))))
         return
 
-    dag = graph.build_graph_from_dependencies(dependencies)
+    dag = dbd.graph.build_graph_from_dependencies(dependencies)
     topologically_sorted_components = dag.get_topologically_sorted_nodes()
 
     cache_dir = _get_cache_dir(args)
@@ -187,8 +188,7 @@ def main() -> None:
                                                    image_builders,
                                                    force_rebuild_components)
 
-    output.generate_output(input_conf, output_configuration, Path(args.output_dir))
+    dbd.output.generate_output(input_conf, output_configuration, Path(args.output_dir))
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO)
     main()

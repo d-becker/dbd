@@ -10,8 +10,8 @@ from typing import Any, Dict, List
 
 import yaml
 
-from component_builder import Configuration, DistType
-import output.docker_compose_generator
+from dbd.component_builder import Configuration, DistType
+import dbd.output.docker_compose_generator
 
 def _generate_compose_config_file_text(sorted_components: List[str], resource_path: Path) -> str:
     text = io.StringIO()
@@ -70,8 +70,8 @@ def _generate_docker_compose_file_text(input_component_config: Dict[str, Any], r
     customised_services = {component : value.get("services", {})
                            for component, value in input_component_config.items()}
 
-    docker_compose_dict = output.docker_compose_generator.generate_docker_compose_file_dict(docker_compose_parts,
-                                                                                            customised_services)
+    docker_compose_dict = dbd.output.docker_compose_generator.generate_docker_compose_file_dict(docker_compose_parts,
+                                                                                                customised_services)
     return yaml.dump(docker_compose_dict, default_style=None)
 
 def generate_output(input_config: Dict[str, Any],

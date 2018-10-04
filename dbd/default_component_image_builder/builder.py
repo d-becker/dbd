@@ -17,11 +17,11 @@ from typing import Dict, Iterable, List, Tuple
 
 import docker
 
-from component_builder import ComponentConfig, ComponentImageBuilder, Configuration, DistType, DistInfo
-from default_component_image_builder.assembly import Assembly
-from default_component_image_builder.cache import Cache
-from default_component_image_builder.pipeline.builder import PipelineBuilder
-from default_component_image_builder.pipeline.executor import DefaultPipelineExecutor
+from dbd.component_builder import ComponentConfig, ComponentImageBuilder, Configuration, DistType, DistInfo
+from dbd.default_component_image_builder.assembly import Assembly
+from dbd.default_component_image_builder.cache import Cache
+from dbd.default_component_image_builder.pipeline.builder import PipelineBuilder
+from dbd.default_component_image_builder.pipeline.executor import DefaultPipelineExecutor
 
 class DefaultComponentImageBuilder(ComponentImageBuilder):
     """

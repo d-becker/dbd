@@ -7,14 +7,14 @@ import tempfile
 from typing import List
 from pathlib import Path
 
-from component_builder import DistInfo, DistType
+from dbd.component_builder import DistInfo, DistType
 
-from default_component_image_builder.stages import (
+from dbd.default_component_image_builder.stages import (
     BuildDockerImageStage,
     CreateTarfileStage,
     DownloadFileStage)
 
-from oozie import BuildOozieStage, OoziePipelineBuilder, ShellCommandExecutor
+from dbd.oozie import BuildOozieStage, OoziePipelineBuilder, ShellCommandExecutor
 
 from .temp_dir_test_case import TmpDirTestCase
 from .test_default_component_image_builder.test_pipeline.pipeline_builder_testcase import PipelineBuilderTestCase
