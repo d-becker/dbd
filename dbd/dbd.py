@@ -76,7 +76,7 @@ def _get_component_image_builders(components: List[str],
         image_builder: ComponentImageBuilder
 
         try:
-            module = importlib.import_module(component)
+            module = importlib.import_module("dbd.{}".format(component))
             image_builder = module.__dict__["get_image_builder"](assembly, cache_dir)
         except ModuleNotFoundError:
             image_builder = dbd.default_image_builder_module.get_image_builder(component, assembly, cache_dir)
@@ -105,7 +105,7 @@ def _get_component_assemblies(resource_path: Path, components: List[str]) -> Dic
 def _get_initial_configuration(name: str) -> Configuration:
     timestamp: str = str(int(time.time()))
     repository: str = "dbd"
-    resource_path: Path = Path(__main__.__file__).parent.resolve().parent / "resources"
+    resource_path: Path = Path(__main__.__file__).parent.resolve() / "dbd"  / "resources"
 
     return Configuration(name, timestamp, repository, resource_path)
 
@@ -157,8 +157,7 @@ def main() -> None:
     """
 
     logging.basicConfig(level=logging.INFO)
-    parser = _get_argument_parser()
-    args = parser.parse_args()
+    args = _get_argument_parser().parse_args()
 
     input_conf = _parse_yaml(args.config_file)
     name = input_conf["name"]
@@ -182,6 +181,7 @@ def main() -> None:
     image_builders = _get_component_image_builders(components, assemblies, cache_dir)
 
     force_rebuild_components = _get_force_rebuild_components(args, components)
+    print("Force rebuilding: {}.".format(force_rebuild_components)) # TODO: Delete
     output_configuration = _build_component_images(name,
                                                    topologically_sorted_components,
                                                    input_conf["components"],

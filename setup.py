@@ -7,6 +7,8 @@ setup(
     version = "0.1",
     packages = find_packages(),
 
+    package_data = {'dbd/resources': ['*']},
+
     entry_points = {
         'console_scripts': [
             'dbd = dbd.dbd:main'
