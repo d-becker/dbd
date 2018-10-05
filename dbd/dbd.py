@@ -10,6 +10,9 @@ import logging
 import time
 
 from pathlib import Path
+
+import pkg_resources
+
 from typing import Any, Dict, List, Set
 
 import yaml
@@ -105,8 +108,9 @@ def _get_component_assemblies(resource_path: Path, components: List[str]) -> Dic
 def _get_initial_configuration(name: str) -> Configuration:
     timestamp: str = str(int(time.time()))
     repository: str = "dbd"
-    resource_path: Path = Path(__main__.__file__).parent.resolve() / "dbd"  / "resources"
-
+    resource_path: Path = Path(pkg_resources.resource_filename("dbd.resources", ""))
+    print("Resource path: {}.".format(resource_path)) # TODO
+    
     return Configuration(name, timestamp, repository, resource_path)
 
 def _build_component_images(name: str,
