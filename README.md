@@ -85,5 +85,5 @@ pylint dbd
 
 To run the tests, execute the following from the repository root:
 ```
-python3 -m unittest discover -v -t dbd -s test
+python3 -m unittest discover -v -t . -s dbd/test
 ```
