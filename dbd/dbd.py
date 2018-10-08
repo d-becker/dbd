@@ -11,10 +11,9 @@ import time
 
 from pathlib import Path
 
-import pkg_resources
-
 from typing import Any, Dict, List, Set
 
+import pkg_resources
 import yaml
 
 import __main__
@@ -109,8 +108,8 @@ def _get_initial_configuration(name: str) -> Configuration:
     timestamp: str = str(int(time.time()))
     repository: str = "dbd"
     resource_path: Path = Path(pkg_resources.resource_filename("dbd.resources", ""))
-    print("Resource path: {}.".format(resource_path)) # TODO
-    
+    logging.info("Resource path: %s.", resource_path)
+
     return Configuration(name, timestamp, repository, resource_path)
 
 def _build_component_images(name: str,
@@ -185,7 +184,6 @@ def main() -> None:
     image_builders = _get_component_image_builders(components, assemblies, cache_dir)
 
     force_rebuild_components = _get_force_rebuild_components(args, components)
-    print("Force rebuilding: {}.".format(force_rebuild_components)) # TODO: Delete
     output_configuration = _build_component_images(name,
                                                    topologically_sorted_components,
                                                    input_conf["components"],

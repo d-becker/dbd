@@ -10,7 +10,7 @@ import dbd.output.docker_compose_generator
 
 class TestGenerateDockerComposeFileDict(unittest.TestCase):
     def setUp(self) -> None:
-        self.docker_compose_parts: Dict[str, Dict[str, Union[output.docker_compose_generator.Services, Any]]] = {
+        self.docker_compose_parts: Dict[str, Dict[str, Union[dbd.output.docker_compose_generator.Services, Any]]] = {
             "hadoop": {
                 "services": {
                     "namenode": {
@@ -33,7 +33,7 @@ class TestGenerateDockerComposeFileDict(unittest.TestCase):
         }
 
     def test_service_customisation_ok(self) -> None:
-        customisations: output.docker_compose_generator.Services = {}
+        customisations: dbd.output.docker_compose_generator.Services = {}
 
         customisations["hadoop"] = {
             "namenode": {"hostname": "nn"}
@@ -45,7 +45,7 @@ class TestGenerateDockerComposeFileDict(unittest.TestCase):
         }
 
         result = dbd.output.docker_compose_generator.generate_docker_compose_file_dict(self.docker_compose_parts,
-                                                                                   customisations)
+                                                                                       customisations)
 
         expected_namenode = {"image": "${HADOOP_IMAGE}",
                              "hostname": "nn"}
