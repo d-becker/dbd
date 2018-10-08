@@ -22,6 +22,8 @@ import dbd.graph
 import dbd.output
 
 from dbd.component_builder import ComponentImageBuilder, Configuration
+from dbd.default_component_image_builder.cache import Cache
+
 import dbd.default_image_builder_module
 
 def _get_argument_parser() -> argparse.ArgumentParser:
@@ -35,6 +37,8 @@ def _get_argument_parser() -> argparse.ArgumentParser:
                         help="force rebuilding the images of the given COMPONENTs even if suitable " +
                         "images already exist; if specified without arguments, all images are rebuilt")
     parser.add_argument("-c", "--cache", metavar="CACHE_DIR", help="the directory used to cache the build stages")
+    parser.add_argument("-s", "--cache_size", default=15,
+                        help="the maximal number of (regular) files that are allowed to be in the cache")
 
     return parser
 
@@ -45,7 +49,7 @@ def _parse_yaml(filename: str) -> Dict[str, Any]:
 
 def _get_cache_dir(args: argparse.Namespace) -> Path:
     if args.cache is None:
-        default_cache_dir = Path(__main__.__file__).parent.resolve().parent / "cache"
+        default_cache_dir = Path(__main__.__file__).parent.resolve() / "cache"
         logging.info("Using the default cache directory: %s.", default_cache_dir)
         return default_cache_dir
 
@@ -70,7 +74,7 @@ def _get_components(conf: Dict[str, Any]) -> List[str]:
 
 def _get_component_image_builders(components: List[str],
                                   assemblies: Dict[str, Dict[str, Any]],
-                                  cache_dir: Path) -> Dict[str, ComponentImageBuilder]:
+                                  cache: Cache) -> Dict[str, ComponentImageBuilder]:
     image_builders: Dict[str, ComponentImageBuilder] = {}
 
     for component in components:
@@ -79,9 +83,9 @@ def _get_component_image_builders(components: List[str],
 
         try:
             module = importlib.import_module("dbd.{}".format(component))
-            image_builder = module.__dict__["get_image_builder"](assembly, cache_dir)
+            image_builder = module.__dict__["get_image_builder"](assembly, cache)
         except ModuleNotFoundError:
-            image_builder = dbd.default_image_builder_module.get_image_builder(component, assembly, cache_dir)
+            image_builder = dbd.default_image_builder_module.get_image_builder(component, assembly, cache)
 
         image_builders[component] = image_builder
 
@@ -181,7 +185,8 @@ def main() -> None:
     topologically_sorted_components = dag.get_topologically_sorted_nodes()
 
     cache_dir = _get_cache_dir(args)
-    image_builders = _get_component_image_builders(components, assemblies, cache_dir)
+    cache = Cache(cache_dir, max_size=int(args.cache_size))
+    image_builders = _get_component_image_builders(components, assemblies, cache)
 
     force_rebuild_components = _get_force_rebuild_components(args, components)
     output_configuration = _build_component_images(name,
@@ -191,6 +196,8 @@ def main() -> None:
                                                    force_rebuild_components)
 
     dbd.output.generate_output(input_conf, output_configuration, Path(args.output_dir))
+
+    cache.enforce_max_size()
 
 if __name__ == "__main__":
     main()

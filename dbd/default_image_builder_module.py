@@ -5,7 +5,6 @@ This module contains the function that creates `DefaultComponentImageBuilder`s f
 """
 
 from typing import Any, Dict
-from pathlib import Path
 
 import dbd.component_builder
 from dbd.default_component_image_builder.builder import DefaultComponentImageBuilder
@@ -15,18 +14,17 @@ from dbd.default_component_image_builder.pipeline.builder import DefaultPipeline
 
 def get_image_builder(component_name: str,
                       assembly: Dict[str, Any],
-                      cache_dir: Path) -> dbd.component_builder.ComponentImageBuilder:
+                      cache: Cache) -> dbd.component_builder.ComponentImageBuilder:
     """
     Returns a `DefaultComponentImageBuilder` object for the given component.
 
     Args:
         component_name: The name of the component.
         assembly: An object containing component-specific information such as dependencies.
-        cache_dir: The path to the global cache directory.
+        cache: The `Cache` object that handles the global cache.
     """
 
     assembly_object = Assembly.from_dict(assembly)
-    cache = Cache(cache_dir)
     pipeline_builder = DefaultPipelineBuilder()
 
     return DefaultComponentImageBuilder(component_name,

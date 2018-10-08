@@ -127,17 +127,16 @@ class OoziePipelineBuilder(PipelineBuilder):
 
         return pipeline
 
-def get_image_builder(assembly: Dict[str, Any], cache_dir: Path) -> ComponentImageBuilder:
+def get_image_builder(assembly: Dict[str, Any], cache: Cache) -> ComponentImageBuilder:
     """
     Returns a `ComponentImageBuilder` object that can build Oozie docker images.
 
     Args:
         assembly: An object containing component-specific information such as dependencies.
-        cache_dir: The path to the global cache directory.
+        cache: The `Cache` object that handles the global cache.
     """
 
     assembly_object = Assembly.from_dict(assembly)
-    cache = Cache(cache_dir)
     pipeline_builder = OoziePipelineBuilder()
 
     return DefaultComponentImageBuilder("oozie",
