@@ -149,8 +149,8 @@ def get_image_builder(assembly: Dict[str, Any], cache: Cache) -> dbd.component_b
 
 The `assembly` parameter contains the key-value pairs that were read from the `assembly.yaml` file.
 
-The `cache` parameter is a `dbd.default_component_image_builder.cache import Cache` object that handles caching. The
-image builders are not required to use caching, but if they do, this directory should be used for it.
+The `cache` parameter is a `dbd.default_component_image_builder.cache.Cache` object that handles caching.
+The image builders are not required to use caching, but if they do, this directory should be used for it.
 
 To build the component images, the main application calls the `build` method of the `ComponentImageBuilder` objects. The
 `ComponentImageBuilder` of a component has access to configuration and build information of its dependencies (and other
