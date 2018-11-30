@@ -47,10 +47,10 @@ def is_docker_compose_command_available() -> bool:
 
 def is_docker_daemon_running() -> bool:
     """
-    Checks whether the docker daemon is running.
+    Checks whether the docker daemon is running and is accessible to the user.
 
     Returns:
-        True if the docker daemon is running; false otherwise.
+        True if the docker daemon is running and is accessible to the user; false otherwise.
 
     """
 
@@ -134,6 +134,8 @@ def check_docker_daemon_running() -> None:
     if is_docker_daemon_running():
         logging.info("Docker daemon is running.")
     else:
-        msg = "Docker daemon is not running. Please start it to be able to use dbd."
+        msg = ("Docker daemon is not running or you do not have the necessary privileges to connect to it. "
+               + " Please start it to be able to use dbd.")
+
         logging.error(msg)
         raise DockerSetupError(msg)

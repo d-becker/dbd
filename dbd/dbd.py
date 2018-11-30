@@ -159,7 +159,7 @@ def _dependencies_without_configuration(components: List[str],
 
     return dependencies_set - components_set
 
-def start_dbd(args: argparse.ArgumentParser) -> None:
+def start_dbd(args: argparse.Namespace) -> None:
     """
     Starts the main dbd program.
     """
