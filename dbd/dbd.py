@@ -159,13 +159,10 @@ def _dependencies_without_configuration(components: List[str],
 
     return dependencies_set - components_set
 
-def start_dbd() -> None:
+def start_dbd(args: argparse.ArgumentParser) -> None:
     """
     Starts the main dbd program.
     """
-
-    logging.basicConfig(level=logging.INFO)
-    args = _get_argument_parser().parse_args()
 
     input_conf = _parse_yaml(args.config_file)
     name = input_conf["name"]
@@ -205,10 +202,13 @@ def main() -> None:
     The entry point to the application. Run on the command line with `--help` to get information on usage.
     """
 
+    logging.basicConfig(level=logging.INFO)
+    args = _get_argument_parser().parse_args()
+
     # Check whether docker is installed and running.
     dbd.docker_setup.check_docker_daemon_running()
 
-    start_dbd()
+    start_dbd(args)
 
 if __name__ == "__main__":
     main()
