@@ -80,7 +80,9 @@ class Cache:
         for file_path in to_delete:
             file_path.unlink()
 
-        Cache._recursively_delete_empty_dirs(self._base_path)
+        if self._base_path.is_dir():
+            # If the cache does not exist or is not a directory, we ignore it.
+            Cache._recursively_delete_empty_dirs(self._base_path)
 
         return to_delete
 
