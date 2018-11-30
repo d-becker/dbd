@@ -18,6 +18,7 @@ import yaml
 
 import __main__
 
+import dbd.docker_setup
 import dbd.graph
 import dbd.output
 
@@ -158,9 +159,9 @@ def _dependencies_without_configuration(components: List[str],
 
     return dependencies_set - components_set
 
-def main() -> None:
+def start_dbd() -> None:
     """
-    The entry point to the application. Run on the command line with `--help` to get information on usage.
+    Starts the main dbd program.
     """
 
     logging.basicConfig(level=logging.INFO)
@@ -198,6 +199,17 @@ def main() -> None:
     dbd.output.generate_output(input_conf, output_configuration, Path(args.output_dir))
 
     cache.enforce_max_size()
+
+def main() -> None:
+    """
+    The entry point to the application. Run on the command line with `--help` to get information on usage.
+    """
+
+    # Check whether docker is installed and running.
+    # If it is installed but not running, it is started.
+    dbd.docker_setup.ensure_docker_daemon_running()
+
+    start_dbd()
 
 if __name__ == "__main__":
     main()
