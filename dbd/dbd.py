@@ -206,8 +206,7 @@ def main() -> None:
     """
 
     # Check whether docker is installed and running.
-    # If it is installed but not running, it is started.
-    dbd.docker_setup.ensure_docker_daemon_running()
+    dbd.docker_setup.check_docker_daemon_running()
 
     start_dbd()
 

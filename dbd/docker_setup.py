@@ -116,7 +116,7 @@ def start_docker_daemon() -> None:
 
     _wait_for_docker_daemon_to_start(120)
 
-def ensure_docker_daemon_running() -> None:
+def check_docker_daemon_running() -> None:
     """
     Ensures that the docker daemon is running, starting it if it is not.
 
@@ -134,4 +134,6 @@ def ensure_docker_daemon_running() -> None:
     if is_docker_daemon_running():
         logging.info("Docker daemon is running.")
     else:
-        start_docker_daemon()
+        msg = "Docker daemon is not running. Please start it to be able to use dbd."
+        logging.error(msg)
+        raise DockerSetupError(msg)
