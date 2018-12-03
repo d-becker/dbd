@@ -8,6 +8,7 @@ Oozie component and some Oozie-specific classes that the function depends on.
 from abc import ABCMeta, abstractmethod
 import logging
 from pathlib import Path
+import shutil
 import subprocess
 import tarfile
 import tempfile
@@ -67,6 +68,11 @@ class BuildOozieStage(Stage):
         return self._name
 
     def execute(self, input_path: Path, output_path: Path) -> None:
+        if not BuildOozieStage._is_maven_available():
+            msg = "Maven does not seem to be installed but is needed to build Oozie: missing command `mvn`."
+            logging.error("Stage %s: %s", self.name(), msg)
+            raise ValueError(msg)
+
         logging.info("Stage %s: Extracting the downloaded Oozie tar file.", self.name())
 
         with tempfile.TemporaryDirectory() as tmp_dir_name:
@@ -100,6 +106,10 @@ class BuildOozieStage(Stage):
 
                 output_path.parent.mkdir(parents=True, exist_ok=True)
                 distro_file_path.rename(output_path)
+
+    @staticmethod
+    def _is_maven_available() -> bool:
+        return shutil.which("mvn") is not None
 
 class OoziePipelineBuilder(PipelineBuilder):
     """
