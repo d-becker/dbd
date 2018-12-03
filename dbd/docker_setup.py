@@ -135,7 +135,7 @@ def check_docker_daemon_running() -> None:
         logging.info("Docker daemon is running.")
     else:
         msg = ("Docker daemon is not running or you do not have the necessary privileges to connect to it. "
-               + " Please start it to be able to use dbd.")
+               + "Please start it to be able to use dbd.")
 
         logging.error(msg)
         raise DockerSetupError(msg)

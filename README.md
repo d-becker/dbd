@@ -5,10 +5,52 @@ This tool’s aim is to make it easy to set up a working dockerized big data inf
 components (Hadoop, Hive, Oozie etc.) can be set individually, and even unreleased snapshot builds can be used. This
 makes integration testing a lot less cumbersome.
 
-The tool takes a configuration file called the _BuildConfiguration_ as input, builds the required docker images and produces a directory with a docker-compose file that can be used to start up the dockerised cluster.
+The tool takes a configuration file called the _BuildConfiguration_ as input, builds the required docker images and
+produces a directory with a docker-compose file that can be used to start up the dockerised cluster.
 
 The docker images built by dbd and many of the scripts building them are based on the [flokkr
 project](https://github.com/flokkr).
+
+## Prerequisites
+* Docker
+  
+  Dbd uses docker to simulate computer clusters. This means that you need to have docker installed and the docker
+  daemon running while using dbd.
+
+* Python3
+  
+  To use dbd, you need at least python 3.6. If you would like to build a python wheel of dbd (recommended), you
+  also need the setuptools python package.
+
+* Maven
+  
+  To use release versions of the Oozie component, you also need maven as it is necessary to build Oozie.
+
+Dbd also has a number of python packages it depends on, therefore it is recommended to install it from a (locally built)
+python wheel, as in this case the dependencies are installed together with it. See instruction below on how to to this.
+
+## Installation
+After cloning the repository, you can run dbd directly from the source using the `run_dbd.py` file, but the recommended
+way is to make a python wheel and install it using `pip`. This ensures that the python dependencies of the project also
+get installed along with dbd.
+
+To create a wheel, run the following command:
+
+```
+python3 setup.py bdist_wheel
+```
+
+To install dbd from the wheel, run the following command (you may have to to adjust version numbers):
+
+```
+pip3 install dist/dbd-0.1-py3-none-any.whl
+```
+
+Now you can use dbd as follows:
+
+```
+dbd --help
+```
 
 ## Usage
 First you need to specify which components you would like to use and what version or local snapshot build they should
@@ -54,7 +96,7 @@ information about them in the DEVELOPER_GUIDE.md file in this repository.
 When you have created the _BuildConfiguration_ file, run the following in a terminal from the root of this repository:
 
 ```
-dbd/dbd.py <build_configuration_file> <output_directory>
+python3 run_dbd.py <build_configuration_file> <output_directory>
 ```
 
 Replace `<build_configuration_file>` with your _BuildConfiguration_ file and `<output_directory>` with the directory
