@@ -51,18 +51,21 @@ class BuildOozieStage(Stage):
 
     def __init__(self,
                  name: str,
-                 shell_command_executor: ShellCommandExecutor) -> None:
+                 shell_command_executor: ShellCommandExecutor,
+                 hadoop_version: str) -> None:
         """
         Creates a new `BuildOozieStage` object.
 
         Args:
             name: The name of the stage.
             shell_command_executor: The `ShellCommandExecutor` to use.
+            hadoop_version: The Hadoop version against which Oozie will be built.
 
         """
 
         self._name = name
         self._shell_command_executor = shell_command_executor
+        self._hadoop_version = hadoop_version
 
     def name(self) -> str:
         return self._name
@@ -91,6 +94,7 @@ class BuildOozieStage(Stage):
                 command = [str(script_file),
                            "-Puber",
                            "-Ptez",
+                           "-Dhadoop.version={}".format(self._hadoop_version),
                            "-DskipTests"]
 
                 logging.info("Build command: %s.", " ".join(command))
@@ -132,7 +136,8 @@ class OoziePipelineBuilder(PipelineBuilder):
                                                         docker_context_dir)
 
         if dist_info.dist_type == DistType.RELEASE:
-            build_oozie_stage = BuildOozieStage("distro", DefaultShellCommandExecutor())
+            hadoop_version = built_config.components["hadoop"].version
+            build_oozie_stage = BuildOozieStage("distro", DefaultShellCommandExecutor(), hadoop_version)
             pipeline.inner_stages.insert(0, build_oozie_stage)
 
         return pipeline

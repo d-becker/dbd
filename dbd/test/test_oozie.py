@@ -7,7 +7,7 @@ import tempfile
 from typing import List
 from pathlib import Path
 
-from dbd.component_builder import DistInfo, DistType
+from dbd.component_builder import ComponentConfig, DistInfo, DistType
 
 from dbd.default_component_image_builder.stages import (
     BuildDockerImageStage,
@@ -32,7 +32,8 @@ class TestBuildOozieStage(TmpDirTestCase):
         dest_path = self._tmp_dir_path / "oozie-disto.tar.gz"
 
         shell_command_executor = MockShellCommandExecutor()
-        stage = BuildOozieStage("distro", shell_command_executor)
+        hadoop_version = "2.8.5"
+        stage = BuildOozieStage("distro", shell_command_executor, hadoop_version)
 
         stage.execute(source_archive, dest_path)
 
@@ -65,6 +66,7 @@ class TestOoziePipelineBuilder(PipelineBuilderTestCase):
 
     def test_oozie_builder_adds_build_oozie_stage_in_release_mode(self) -> None:
         arguments = self.get_default_arguments()
+        arguments["built_config"].components["hadoop"] = ComponentConfig(DistType.RELEASE, "2.8.5", "no-image")
         arguments["dist_info"] = DistInfo(DistType.RELEASE, "5.0.0")
 
         pipeline_builder = OoziePipelineBuilder()
