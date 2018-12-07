@@ -10,7 +10,7 @@ import tempfile
 from pathlib import Path
 from typing import Optional, Tuple, Union
 
-from dbd.component_builder import DistType
+from dbd.component_config import DistType
 from dbd.default_component_image_builder.cache import Cache
 from dbd.default_component_image_builder.pipeline import EntryStage, Pipeline, Stage
 

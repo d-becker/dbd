@@ -7,7 +7,7 @@ import tempfile
 from typing import List
 from pathlib import Path
 
-from dbd.component_builder import ComponentConfig, DistInfo, DistType
+from dbd.component_config import ComponentConfig, DistInfo, DistType
 
 from dbd.default_component_image_builder.stages import (
     BuildDockerImageStage,

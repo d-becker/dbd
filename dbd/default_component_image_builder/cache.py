@@ -8,7 +8,7 @@ import logging
 from typing import Dict, List, Optional
 from pathlib import Path
 
-from dbd.component_builder import DistType
+from dbd.component_config import DistType
 
 class Cache:
     """

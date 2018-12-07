@@ -14,7 +14,9 @@ import tarfile
 import tempfile
 from typing import Any, Dict, List
 
-from dbd.component_builder import ComponentImageBuilder, Configuration, DistInfo, DistType
+from dbd.configuration import Configuration
+from dbd.component_builder import ComponentImageBuilder
+from dbd.component_config import DistInfo, DistType
 from dbd.default_component_image_builder.assembly import Assembly
 from dbd.default_component_image_builder.builder import DefaultComponentImageBuilder
 from dbd.default_component_image_builder.cache import Cache

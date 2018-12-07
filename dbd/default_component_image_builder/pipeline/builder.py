@@ -11,7 +11,8 @@ from typing import Dict, Optional
 
 import docker
 
-from dbd.component_builder import ComponentConfig, Configuration, DistInfo, DistType
+from dbd.configuration import Configuration
+from dbd.component_config import ComponentConfig, DistInfo, DistType
 from dbd.default_component_image_builder.assembly import Assembly
 from dbd.default_component_image_builder.pipeline import EntryStage, Pipeline
 

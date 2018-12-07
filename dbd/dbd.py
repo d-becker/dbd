@@ -13,16 +13,12 @@ from pathlib import Path
 
 from typing import Any, Dict, List, Set
 
-import pkg_resources
 import yaml
 
-import __main__
-
+import dbd.defaults
 import dbd.docker_setup
 import dbd.graph
 import dbd.output
-
-from dbd.resource_accessor import ResourceAccessor
 
 from dbd.component_builder import ComponentImageBuilder, Configuration
 from dbd.default_component_image_builder.cache import Cache
@@ -33,14 +29,14 @@ def _get_argument_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Create a directory which can be used by docker-compose " +
                                      "using the provided components, building the needed docker images.")
     parser.add_argument("config_file", help="the configuration file to be used")
-    parser.add_argument("output_dir", default=".",
+    parser.add_argument("output_dir", default=dbd.defaults.OUTPUT_DIR,
                         help="the directory in which the output directory will be created; " +
                         "this directory must already exist")
     parser.add_argument("-f", "--force", metavar="COMPONENT", nargs="*",
                         help="force rebuilding the images of the given COMPONENTs even if suitable " +
                         "images already exist; if specified without arguments, all images are rebuilt")
     parser.add_argument("-c", "--cache", metavar="CACHE_DIR", help="the directory used to cache the build stages")
-    parser.add_argument("-s", "--cache_size", default=15,
+    parser.add_argument("-s", "--cache_size", default=dbd.defaults.CACHE_SIZE,
                         help="the maximal number of (regular) files that are allowed to be in the cache")
 
     return parser
@@ -50,15 +46,17 @@ def _parse_yaml(filename: str) -> Dict[str, Any]:
         text = file.read()
         return yaml.load(text)
 
-def _get_cache_dir(args: argparse.Namespace) -> Path:
+def _get_cache_dir(args: argparse.Namespace, default_cache_dir: Path) -> Path:
     if args.cache is None:
-        default_cache_dir = Path(__main__.__file__).parent.resolve() / "cache"
         logging.info("Using the default cache directory: %s.", default_cache_dir)
         return default_cache_dir
 
     cache_dir = Path(args.cache).expanduser().resolve()
     logging.info("Using cache directory: %s", cache_dir)
     return cache_dir
+
+def _is_kerberos_enabled(input_conf: Dict[str, Any]) -> bool:
+    return input_conf.get("kerberos", False)
 
 def _get_force_rebuild_components(args: argparse.Namespace, components: List[str]) -> List[str]:
     force_rebuild_components: List[str]
@@ -94,11 +92,11 @@ def _get_component_image_builders(components: List[str],
 
     return image_builders
 
-def _get_assembly_from_resource_files(resources: ResourceAccessor,
+def _get_assembly_from_resource_files(configuration: Configuration,
                                       components: List[str]) -> Dict[str, Dict[str, Any]]:
     result: Dict[str, Dict[str, Any]] = {}
     for component in components:
-        assembly_file = resources.get_assembly(component)
+        assembly_file = configuration.get_assembly(component)
         with assembly_file.open() as file:
             text = file.read()
             assembly_dictionary = yaml.load(text)
@@ -107,26 +105,29 @@ def _get_assembly_from_resource_files(resources: ResourceAccessor,
 
     return result
 
-def _get_component_assemblies(resources: ResourceAccessor, components: List[str]) -> Dict[str, Dict[str, Any]]:
-    return _get_assembly_from_resource_files(resources, components)
+def _get_component_assemblies(configuration: Configuration, components: List[str]) -> Dict[str, Dict[str, Any]]:
+    return _get_assembly_from_resource_files(configuration, components)
 
-def _get_initial_configuration(name: str) -> Configuration:
+def _get_initial_configuration(input_conf: Dict[str, Any],
+                               docker_repository: str,
+                               resource_path: Path) -> Configuration:
     timestamp: str = str(int(time.time()))
-    repository: str = "dbd"
-    resource_path: Path = Path(pkg_resources.resource_filename("dbd.resources", ""))
-    resources = ResourceAccessor(resource_path)
+
+    name = input_conf["name"]
+    kerberos = _is_kerberos_enabled(input_conf)
+
     logging.info("Resource path: %s.", resource_path)
 
-    return Configuration(name, timestamp, repository, resources)
+    return Configuration(name, timestamp, docker_repository, kerberos, resource_path)
 
-def _build_component_images(name: str,
-                            components: List[str],
+def _build_component_images(components: List[str],
                             input_configuration: Dict[str, Dict[str, str]],
+                            initial_configuration: Configuration,
                             image_builders: Dict[str, ComponentImageBuilder],
                             force_rebuild: List[str]) -> Configuration:
-    resulting_configuration = _get_initial_configuration(name)
+    resulting_configuration = initial_configuration
 
-    print("Building components in the following order: {}.".format(components))
+    logging.info("Building components in the following order: %s.", components)
 
     for component in components:
         component_conf = input_configuration[component]
@@ -167,31 +168,32 @@ def start_dbd(args: argparse.Namespace) -> None:
     """
 
     input_conf = _parse_yaml(args.config_file)
-    name = input_conf["name"]
+    resource_path = dbd.defaults.RESOURCE_PATH
+
+    initial_configuration = _get_initial_configuration(input_conf, dbd.defaults.DOCKER_REPOSITORY, resource_path)
+
     components = _get_components(input_conf)
 
-    configuration = _get_initial_configuration(name)
-
-    assemblies = _get_component_assemblies(configuration.resources, components)
+    assemblies = _get_component_assemblies(initial_configuration, components)
     dependencies = _get_dependencies_from_assemblies(assemblies)
 
     deps_without_config = _dependencies_without_configuration(components, dependencies)
     if len(deps_without_config) > 0:
-        print("Error: the following components are not specified in the configuration but are needed as dependencies"
-              "by other components: {}".format(str(list(deps_without_config))))
+        logging.error("Error: the following components are not specified in the configuration but are needed "
+                      "as dependencies by other components: %s", (str(list(deps_without_config))))
         return
 
     dag = dbd.graph.build_graph_from_dependencies(dependencies)
     topologically_sorted_components = dag.get_topologically_sorted_nodes()
 
-    cache_dir = _get_cache_dir(args)
+    cache_dir = _get_cache_dir(args, dbd.defaults.CACHE_DIR)
     cache = Cache(cache_dir, max_size=int(args.cache_size))
     image_builders = _get_component_image_builders(components, assemblies, cache)
 
     force_rebuild_components = _get_force_rebuild_components(args, components)
-    output_configuration = _build_component_images(name,
-                                                   topologically_sorted_components,
+    output_configuration = _build_component_images(topologically_sorted_components,
                                                    input_conf["components"],
+                                                   initial_configuration,
                                                    image_builders,
                                                    force_rebuild_components)
 

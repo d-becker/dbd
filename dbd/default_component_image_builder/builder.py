@@ -17,7 +17,9 @@ from typing import Dict, Iterable, List, Tuple
 
 import docker
 
-from dbd.component_builder import ComponentConfig, ComponentImageBuilder, Configuration, DistType, DistInfo
+from dbd.configuration import Configuration
+from dbd.component_builder import ComponentImageBuilder
+from dbd.component_config import ComponentConfig, DistType, DistInfo
 from dbd.default_component_image_builder.assembly import Assembly
 from dbd.default_component_image_builder.cache import Cache
 from dbd.default_component_image_builder.pipeline.builder import PipelineBuilder
@@ -84,7 +86,7 @@ class DefaultComponentImageBuilder(ComponentImageBuilder):
         image_name = self._get_image_name(id_string,
                                           built_config)
 
-        docker_context = built_config.resources.get_docker_context(self.name())
+        docker_context = built_config.get_docker_context(self.name())
 
         pipeline = self._pipeline_builder.build_pipeline(built_config,
                                                          self._assembly,

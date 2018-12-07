@@ -2,7 +2,7 @@
 
 # pylint: disable=missing-docstring
 
-from dbd.component_builder import DistInfo, DistType
+from dbd.component_config import DistInfo, DistType
 from dbd.default_component_image_builder.pipeline.builder import DefaultPipelineBuilder
 
 from dbd.default_component_image_builder.stages import (
