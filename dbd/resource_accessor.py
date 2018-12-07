@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 from pathlib import Path
-from typing import Dict, List, Optional
 
 class ResourceAccessor:
     def __init__(self, resource_path: Path) -> None:

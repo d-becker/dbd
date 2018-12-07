@@ -11,12 +11,15 @@ from typing import Any, Dict, List
 import yaml
 
 from dbd.component_builder import Configuration, DistType
+
 import dbd.output.docker_compose_generator
 
-def _generate_compose_config_file_text(sorted_components: List[str], resource_path: Path) -> str:
+from dbd.resource_accessor import ResourceAccessor
+
+def _generate_compose_config_file_text(sorted_components: List[str], resources: ResourceAccessor) -> str:
     text = io.StringIO()
     for component in sorted_components:
-        file_path = resource_path / component / "compose-config_part"
+        file_path = resources.get_compose_config_part(component)
 
         if file_path.exists():
             with file_path.open() as file:
@@ -59,10 +62,10 @@ def _generate_env_file_text(configuration: Configuration) -> str:
 
     return text.getvalue()
 
-def _generate_docker_compose_file_text(input_component_config: Dict[str, Any], resource_path: Path) -> str:
+def _generate_docker_compose_file_text(input_component_config: Dict[str, Any], resources: ResourceAccessor) -> str:
     docker_compose_parts = {}
     for component in input_component_config:
-        file_path = resource_path / component / "docker-compose_part.yaml"
+        file_path = resources.get_docker_compose_part(component)
         with file_path.open() as file:
             docker_compose_part = yaml.load(file)
             docker_compose_parts[component] = docker_compose_part
@@ -107,10 +110,10 @@ def generate_output(input_config: Dict[str, Any],
         file.write(env_file_text)
 
     docker_compose_file_text = _generate_docker_compose_file_text(input_config["components"],
-                                                                  configuration.resource_path)
+                                                                  configuration.resources)
     with (out / "docker-compose.yaml").open("w") as docker_compose_file:
         docker_compose_file.write(docker_compose_file_text)
 
-    compose_config_file_text = _generate_compose_config_file_text(components, configuration.resource_path)
+    compose_config_file_text = _generate_compose_config_file_text(components, configuration.resources)
     with (out / "compose-config").open("w") as compose_config_file:
         compose_config_file.write(compose_config_file_text)

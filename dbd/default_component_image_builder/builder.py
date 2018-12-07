@@ -84,7 +84,7 @@ class DefaultComponentImageBuilder(ComponentImageBuilder):
         image_name = self._get_image_name(id_string,
                                           built_config)
 
-        docker_context = built_config.resource_path / self.name() / "docker_context"
+        docker_context = built_config.resources.get_docker_context(self.name())
 
         pipeline = self._pipeline_builder.build_pipeline(built_config,
                                                          self._assembly,

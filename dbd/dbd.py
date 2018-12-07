@@ -22,6 +22,8 @@ import dbd.docker_setup
 import dbd.graph
 import dbd.output
 
+from dbd.resource_accessor import ResourceAccessor
+
 from dbd.component_builder import ComponentImageBuilder, Configuration
 from dbd.default_component_image_builder.cache import Cache
 
@@ -92,12 +94,11 @@ def _get_component_image_builders(components: List[str],
 
     return image_builders
 
-def _get_assembly_from_resource_files(resource_path: Path,
-                                      components: List[str],
-                                      filename: str) -> Dict[str, Dict[str, Any]]:
+def _get_assembly_from_resource_files(resources: ResourceAccessor,
+                                      components: List[str]) -> Dict[str, Dict[str, Any]]:
     result: Dict[str, Dict[str, Any]] = {}
     for component in components:
-        assembly_file = resource_path / component / filename
+        assembly_file = resources.get_assembly(component)
         with assembly_file.open() as file:
             text = file.read()
             assembly_dictionary = yaml.load(text)
@@ -106,16 +107,17 @@ def _get_assembly_from_resource_files(resource_path: Path,
 
     return result
 
-def _get_component_assemblies(resource_path: Path, components: List[str]) -> Dict[str, Dict[str, Any]]:
-    return _get_assembly_from_resource_files(resource_path, components, "assembly.yaml")
+def _get_component_assemblies(resources: ResourceAccessor, components: List[str]) -> Dict[str, Dict[str, Any]]:
+    return _get_assembly_from_resource_files(resources, components)
 
 def _get_initial_configuration(name: str) -> Configuration:
     timestamp: str = str(int(time.time()))
     repository: str = "dbd"
     resource_path: Path = Path(pkg_resources.resource_filename("dbd.resources", ""))
+    resources = ResourceAccessor(resource_path)
     logging.info("Resource path: %s.", resource_path)
 
-    return Configuration(name, timestamp, repository, resource_path)
+    return Configuration(name, timestamp, repository, resources)
 
 def _build_component_images(name: str,
                             components: List[str],
@@ -170,7 +172,7 @@ def start_dbd(args: argparse.Namespace) -> None:
 
     configuration = _get_initial_configuration(name)
 
-    assemblies = _get_component_assemblies(configuration.resource_path, components)
+    assemblies = _get_component_assemblies(configuration.resources, components)
     dependencies = _get_dependencies_from_assemblies(assemblies)
 
     deps_without_config = _dependencies_without_configuration(components, dependencies)

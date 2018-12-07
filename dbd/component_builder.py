@@ -13,7 +13,7 @@ from typing import Dict, List, Optional
 
 import __main__
 
-# from dbd.resource_accessor import ResourceAccessor
+from dbd.resource_accessor import ResourceAccessor
 
 @unique
 class DistType(Enum):
@@ -118,7 +118,7 @@ class Configuration:
                  name: str,
                  timestamp: str,
                  repository: Optional[str] = None,
-                 resource_path: Optional[Path] = None) -> None:
+                 resources: Optional[ResourceAccessor] = None) -> None:
         """
         Creates a new `Configuration` object.
 
@@ -126,7 +126,7 @@ class Configuration:
             name: The name of the BuildConfiguration (provided by the user).
             timestamp: The timestamp of the build.
             repository: The dockerhub repository to use when naming the images. Defaults to "dbd".
-            resource_path: The path to the directory where the resources of the components are stored.
+            resources: A `ResourceAccessor` object that gives access to the resources of the components.
 
         """
 
@@ -135,7 +135,7 @@ class Configuration:
         self._repository: str = "dbd" if repository is None else repository
 
         default_path = Path(__main__.__file__).parent.resolve().parent / "resources"
-        self._resource_path: Path = default_path  if resource_path is None else resource_path
+        self._resources: ResourceAccessor = ResourceAccessor(default_path)  if resources is None else resources
         self.components: Dict[str, ComponentConfig] = {}
 
     @property
@@ -163,12 +163,12 @@ class Configuration:
         return self._repository
 
     @property
-    def resource_path(self) -> Path:
+    def resources(self) -> ResourceAccessor:
         """
-        The file system path to the resource files.
+        The `ResourceAccessor` object that gives access to the resources of the components.
         """
 
-        return self._resource_path
+        return self._resources
 
 class ComponentImageBuilder(metaclass=ABCMeta):
     """
