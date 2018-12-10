@@ -131,7 +131,7 @@ class DefaultComponentImageBuilder(ComponentImageBuilder):
     def _get_image_name(self,
                         id_string: str,
                         built_config: Configuration) -> str:
-        template = "{repository}/{component}:{component_tag}{dependencies_tag}"
+        template = "{repository}/{component}:{component_tag}{dependencies_tag}{kerberos_tag}"
 
         dependencies = self.dependencies()
         dependencies.sort()
@@ -142,11 +142,13 @@ class DefaultComponentImageBuilder(ComponentImageBuilder):
             deps_join_list.append(dependency + dependency_tag)
 
         dependencies_tag = "_".join(deps_join_list)
+        kerberos_tag = "_kerberos" if built_config.kerberos else ""
 
         return template.format(repository=built_config.repository,
                                component=self.name(),
                                component_tag=id_string,
-                               dependencies_tag=dependencies_tag)
+                               dependencies_tag=dependencies_tag,
+                               kerberos_tag=kerberos_tag)
 
 
 def _dist_type_and_arg(component_config: Dict[str, str]) -> Tuple[DistType, str]:
