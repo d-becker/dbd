@@ -64,6 +64,13 @@ class Configuration:
 
         return self._repository
 
+    @property
+    def kerberos(self) -> bool:
+        """
+        Whether Kerberos is enabled.
+        """
+        return self._kerberos
+
     def get_resource_dir(self, component_name: str) -> Path:
         """
         Returns the path to the resource directory of the component.
