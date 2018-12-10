@@ -88,7 +88,7 @@ class Configuration:
             The path to the assembly file of the component.
         """
 
-        return self.get_resource_dir(component_name) / "assembly.yaml"
+        return self.get_resource_dir(component_name) / self._component_subdir() / "assembly.yaml"
 
     def get_compose_config_part(self, component_name: str) -> Path:
         """
@@ -101,7 +101,7 @@ class Configuration:
             The path to the compose-config_part file of the component.
         """
 
-        return self.get_resource_dir(component_name) / "compose-config_part"
+        return self.get_resource_dir(component_name) / self._component_subdir() / "compose-config_part"
 
     def get_docker_compose_part(self, component_name: str) -> Path:
         """
@@ -114,7 +114,7 @@ class Configuration:
             The path to the docker-compose_part.yaml file of the component.
         """
 
-        return self.get_resource_dir(component_name) / "docker-compose_part.yaml"
+        return self.get_resource_dir(component_name) / self._component_subdir() / "docker-compose_part.yaml"
 
     def get_docker_context(self, component_name: str) -> Path:
         """
@@ -127,4 +127,10 @@ class Configuration:
             The path to the docker-context director of the component.
         """
 
-        return self.get_resource_dir(component_name) / "docker_context"
+        return self.get_resource_dir(component_name) / self._component_subdir() / "docker_context"
+
+    def _component_subdir(self) -> str:
+        if self._kerberos:
+            return "kerberos"
+
+        return "unsecure"
