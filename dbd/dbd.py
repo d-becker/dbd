@@ -46,15 +46,6 @@ def _parse_yaml(filename: str) -> Dict[str, Any]:
         text = file.read()
         return yaml.load(text)
 
-def _get_cache_dir(args: argparse.Namespace, default_cache_dir: Path) -> Path:
-    if args.cache is None:
-        logging.info("Using the default cache directory: %s.", default_cache_dir)
-        return default_cache_dir
-
-    cache_dir = Path(args.cache).expanduser().resolve()
-    logging.info("Using cache directory: %s", cache_dir)
-    return cache_dir
-
 def _is_kerberos_enabled(input_conf: Dict[str, Any]) -> bool:
     return input_conf.get("kerberos", False)
 
@@ -162,32 +153,56 @@ def _dependencies_without_configuration(components: List[str],
 
     return dependencies_set - components_set
 
+def _raise_on_dependencies_without_configuration(components: List[str],
+                                                 dependencies: Dict[str, List[str]]) -> None:
+    deps_without_config = _dependencies_without_configuration(components, dependencies)
+    if len(deps_without_config) > 0:
+        msg_template = ("Error: the following components are not specified in the configuration but are needed as " +
+                        "dependencies by other components: {}.")
+        msg = msg_template.format((list(deps_without_config)))
+
+        logging.error(msg)
+        raise ValueError(msg)
+
+def _get_sorted_nodes(dependencies: Dict[str, List[str]]) -> List[str]:
+    dag = dbd.graph.build_graph_from_dependencies(dependencies)
+    return dag.get_topologically_sorted_nodes()
+
+def _get_cache_dir(args: argparse.Namespace, default_cache_dir: Path) -> Path:
+    if args.cache is None:
+        logging.info("Using the default cache directory: %s.", default_cache_dir)
+        return default_cache_dir
+
+    cache_dir = Path(args.cache).expanduser().resolve()
+    logging.info("Using cache directory: %s", cache_dir)
+    return cache_dir
+
+def _get_cache(args: argparse.Namespace,
+               default_cache_dir: Path,
+               max_cache_size: int) -> Cache:
+    cache_dir = _get_cache_dir(args, default_cache_dir)
+    return Cache(cache_dir, max_size=max_cache_size)
+
 def start_dbd(args: argparse.Namespace) -> None:
     """
     Starts the main dbd program.
     """
 
     input_conf = _parse_yaml(args.config_file)
-    resource_path = dbd.defaults.RESOURCE_PATH
-
-    initial_configuration = _get_initial_configuration(input_conf, dbd.defaults.DOCKER_REPOSITORY, resource_path)
+    initial_configuration = _get_initial_configuration(input_conf,
+                                                       dbd.defaults.DOCKER_REPOSITORY,
+                                                       dbd.defaults.RESOURCE_PATH)
 
     components = _get_components(input_conf)
 
     assemblies = _get_component_assemblies(initial_configuration, components)
     dependencies = _get_dependencies_from_assemblies(assemblies)
 
-    deps_without_config = _dependencies_without_configuration(components, dependencies)
-    if len(deps_without_config) > 0:
-        logging.error("Error: the following components are not specified in the configuration but are needed "
-                      "as dependencies by other components: %s", (str(list(deps_without_config))))
-        return
+    _raise_on_dependencies_without_configuration(components, dependencies)
 
-    dag = dbd.graph.build_graph_from_dependencies(dependencies)
-    topologically_sorted_components = dag.get_topologically_sorted_nodes()
+    topologically_sorted_components = _get_sorted_nodes(dependencies)
 
-    cache_dir = _get_cache_dir(args, dbd.defaults.CACHE_DIR)
-    cache = Cache(cache_dir, max_size=int(args.cache_size))
+    cache = _get_cache(args, dbd.defaults.CACHE_DIR, int(args.cache_size))
     image_builders = _get_component_image_builders(components, assemblies, cache)
 
     force_rebuild_components = _get_force_rebuild_components(args, components)
