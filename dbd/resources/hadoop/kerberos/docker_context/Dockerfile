@@ -3,7 +3,7 @@ ARG BASE=30
 FROM flokkr/base:${BASE}
 
 # Install the utilities needed.
-RUN apk add --update --no-cache libstdc++ findutils ncurses python python3 bind-tools && rm -rf /var/cache/apk/*
+RUN apk add --update --no-cache libstdc++ findutils ncurses python python3 bind-tools krb5 && rm -rf /var/cache/apk/*
 
 # Create the `hadoop` user and add it to its groups.
 RUN adduser -h /opt/ -s /bin/bash -G flokkr -D hadoop && chown hadoop /opt \

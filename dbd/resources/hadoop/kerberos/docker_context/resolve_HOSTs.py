@@ -1,13 +1,25 @@
 #!/usr/bin/env python3
 
+import argparse
+import itertools
+
 from pathlib import Path
 
 import socket
+import sys
 import subprocess
 
 from typing import Iterable, Optional
 
 import xml.etree.ElementTree as ET
+
+def get_argument_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(description="Resolve _HOST variables in XML files.")
+    parser.add_argument("xml_files", nargs="*", help="the XML files in which to resolve _HOST variables")
+    parser.add_argument("--hadoop", action="store_true", help="in addition to other files, add the Hadoop config files")
+    parser.add_argument("--oozie", action="store_true", help="in addition to other files, add the Oozie config files")
+
+    return parser
 
 def perform_dns(hostname: str) -> str:
     cmd_ip = ["dig", "+short", hostname]
@@ -29,9 +41,6 @@ def get_reverse_dns_host_name(normal_hostname: str) -> str:
     ip = perform_dns(normal_hostname)
 
     return perform_reverse_dns(ip)
-
-def get_site_xml_files(directory: Path) -> Iterable[Path]:
-    return directory.glob("*-site.xml")
 
 def get_host_from_property_name(name: str) -> Optional[str]:
     hosts = ["namenode", "nodemanager", "resourcemanager", "datanode"]
@@ -87,15 +96,34 @@ def resolve_in_file(site_file: Path) -> None:
 
     tree.write(str(site_file))
 
-def resolve_HOSTs(site_directory: Path) -> None:
-    for site_file in get_site_xml_files(site_directory):
-        resolve_in_file(site_file)
+def resolve_HOSTs_in_files(files: Iterable[Path]):
+    for xml_file in files:
+        resolve_in_file(xml_file)
+
+def get_hadoop_files() -> Iterable[Path]:
+    return Path("/opt/hadoop/etc/hadoop").glob("*-site.xml")
+
+def get_oozie_files() -> Iterable[Path]:
+    filenames = ["/opt/oozie/conf/oozie-site.xml",
+                 "/opt/oozie/conf/hadoop-config.xml",
+                 "/opt/oozie/conf/hadoop-conf/core-site.xml"]
+    return map(Path, filenames)
 
 def main() -> None:
-    resolve_HOSTs(Path("/opt/hadoop/etc/hadoop"))
+    args = get_argument_parser().parse_args()
+
+    file_paths = map(Path, args.xml_files)
+
+    if args.hadoop:
+        print("Hadoop files added.") # TODO
+        file_paths = itertools.chain(file_paths, get_hadoop_files())
+
+    if args.oozie:
+        print("Oozie file added.") # TODO
+        file_paths = itertools.chain(file_paths, get_oozie_files())
+
+    resolve_HOSTs_in_files(file_paths)
 
 if __name__ == "__main__":
-    print("Running python script.")
+    print("Resolving _HOST variables.")
     main()
-else:
-    print("NOT running python script.")

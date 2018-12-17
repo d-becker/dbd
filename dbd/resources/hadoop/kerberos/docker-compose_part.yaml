@@ -2,7 +2,7 @@ services:
    namenode:
       image: ${HADOOP_IMAGE}
       hostname: namenode
-      command: ["/bin/bash", "-c", "/opt/hadoop/resolve_HOSTs.py && hdfs namenode -format && hdfs namenode"]
+      command: ["/bin/bash", "-c", "\"/opt/hadoop/resolve_HOSTs.py --hadoop && hdfs namenode -format && hdfs namenode\""]
       ports:
          - 50070:50070 # Namenode webui
       env_file:
@@ -11,7 +11,7 @@ services:
 #          NAMENODE_INIT: "hdfs dfs -chmod 777 /"
 #          ENSURE_NAMENODE_DIR: "/tmp/hadoop-hadoop/dfs/name"
    datanode:
-      command: ["/bin/bash", "-c", "/opt/hadoop/resolve_HOSTs.py && hdfs datanode"]
+      command: ["/bin/bash", "-c", "\"/opt/hadoop/resolve_HOSTs.py --hadoop && hdfs datanode\""]
       hostname: datanode
       image: ${HADOOP_IMAGE}
       env_file:
@@ -19,7 +19,7 @@ services:
    resourcemanager:
       image: ${HADOOP_IMAGE}
       hostname: resourcemanager
-      command: ["/bin/bash", "-c", "/opt/hadoop/resolve_HOSTs.py && yarn resourcemanager"]
+      command: ["/bin/bash", "-c", "\"/opt/hadoop/resolve_HOSTs.py --hadoop && yarn resourcemanager\""]
       ports:
          - 8088:8088 # Yarn webui
       env_file:
@@ -27,6 +27,6 @@ services:
    nodemanager:
       image: ${HADOOP_IMAGE}
       hostname: nodemanager
-      command: ["/bin/bash", "-c", "/opt/hadoop/resolve_HOSTs.py && yarn nodemanager"]
+      command: ["/bin/bash", "-c", "\"/opt/hadoop/resolve_HOSTs.py --hadoop  && yarn nodemanager\""]
       env_file:
         - ./compose-config

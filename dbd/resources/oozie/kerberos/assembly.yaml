@@ -1,0 +1,5 @@
+dependencies:
+    - hadoop
+url: https://archive.apache.org//dist/oozie/{version}/oozie-{version}.tar.gz
+version_command: "bin/oozied.sh start && bin/oozie version"
+version_regex: "version: (.*)\n"

@@ -1,0 +1,79 @@
+<configuration>
+    <property>
+        <name>oozie.service.SparkConfigurationService.spark.configurations</name>
+        <value>*=/opt/hadoop/etc/hadoop</value>
+
+    </property>
+
+    <property>
+        <name>oozie.base.url</name> <value>http://oozieserver:11000/oozie</value>
+    </property>
+
+
+    <!-- Kerberos -->
+    <property>
+        <name>oozie.credentials.credentialclasses</name>
+        <value>
+            hcat=org.apache.oozie.action.hadoop.HCatCredentials,
+            hbase=org.apache.oozie.action.hadoop.HbaseCredentials,
+            hive2=org.apache.oozie.action.hadoop.Hive2Credentials</value>
+    </property>
+
+    <property>
+        <name>oozie.service.HadoopAccessorService.kerberos.enabled</name>
+        <value>true</value>
+    </property>
+
+    <property>
+        <name>local.realm</name>
+        <value>EXAMPLE.COM</value>
+    </property>
+
+    <property>
+        <name>oozie.service.HadoopAccessorService.keytab.file</name>
+        <value>/opt/hadoop/etc/hadoop/oozie.keytab</value>
+    </property>
+
+    <property>
+        <name>oozie.service.HadoopAccessorService.kerberos.principal</name>
+        <value>oozie/_HOST@EXAMPLE.COM</value>
+    </property>
+
+    <property>
+        <name>oozie.authentication.type</name>
+        <value>kerberos</value>
+    </property>
+
+    <property>
+        <name>oozie.authentication.kerberos.principal</name>
+        <value>*</value>
+    </property>
+
+    <property>
+        <name>oozie.authentication.kerberos.name.rules</name>
+        <value>RULE:[2:$1@$0](.*)s/.*/root/</value>
+    </property>
+
+    <!-- Also differences between secure and unsecure setup, trying them.-->
+    <property>
+        <name>oozie.https.enabled</name>
+        <value>true</value>
+    </property>
+
+    <property>
+        <name>oozie.https.keystore.file</name>
+        <value>/opt/hadoop/etc/hadoop/oozie.keystore</value>
+    </property>
+    <property>
+        <name>oozie.https.keystore.pass</name>
+        <value>Welcome1</value>
+    </property>
+    <!-- <property>
+        <name>oozie.https.truststore.file</name>
+        <value>/etc/cdep-ssl-conf/CA_STANDARD/truststore.jks</value>
+    </property>
+    <property>
+        <name>oozie.https.truststore.pass</name>
+        <value>********</value>
+    </property>-->
+</configuration>
