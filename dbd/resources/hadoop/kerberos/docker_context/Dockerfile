@@ -3,7 +3,7 @@ ARG BASE=30
 FROM flokkr/base:${BASE}
 
 # Install the utilities needed.
-RUN apk add --update --no-cache libstdc++ findutils ncurses python && rm -rf /var/cache/apk/*
+RUN apk add --update --no-cache libstdc++ findutils ncurses python python3 bind-tools && rm -rf /var/cache/apk/*
 
 # Create the `hadoop` user and add it to its groups.
 RUN adduser -h /opt/ -s /bin/bash -G flokkr -D hadoop && chown hadoop /opt \
@@ -34,6 +34,10 @@ RUN tar zxf hadoop.tar.gz && rm hadoop.tar.gz && mv hadoop* hadoop && rm -rf /op
 RUN mv /opt/hadoop/etc/hadoop /opt/hadoop/etc/hadoop.orig && mkdir -p /opt/hadoop/etc/hadoop && chmod 775 /opt/hadoop/etc/hadoop
 WORKDIR /opt/hadoop
 ADD log4j.properties /opt/hadoop/etc/hadoop/log4j.properties
+
+# This script will resolve '_HOST' in the Hadoop configuration files to the real FQDN.
+ADD resolve_HOSTs.py /opt/hadoop
+RUN sudo chmod a+x /opt/hadoop/resolve_HOSTs.py
 
 #We need the logs directory to be writable from hadoop3.
 RUN mkdir /opt/hadoop/logs

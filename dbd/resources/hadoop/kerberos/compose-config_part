@@ -46,7 +46,7 @@ CAPACITY-SCHEDULER.XML_yarn.scheduler.capacity.queue-mappings-override.enable=fa
 # Kerberos
 CORE-SITE.XML_dfs.data.transfer.protection=authentication
 CORE-SITE.XML_hadoop.security.authentication=kerberos
-CORE-SITE.XML_hadoop.security.auth_to_local=RULE:[2:$1@$0](.*)s/.*/root/
+CORE-SITE.XML_hadoop.security.auth_to_local=RULE:[2:$1@$0](.*)s/.*/hadoop/
 
 HDFS-SITE.XML_dfs.data.transfer.protection=authentication
 HDFS-SITE.XML_dfs.http.policy=HTTPS_ONLY
@@ -54,8 +54,8 @@ HDFS-SITE.XML_dfs.block.access.token.enable=true
 HDFS-SITE.XML_dfs.block.access.key.update.interval=5
 HDFS-SITE.XML_dfs.block.access.token.lifetime=10
 
-HDFS-SITE.XML_dfs.namenode.kerberos.principal=hdfs/_HOST@EXAMPLE.COM
-HDFS-SITE.XML_dfs.namenode.keytab.file=/opt/hadoop/etc/hadoop/hdfs.keytab
+HDFS-SITE.XML_dfs.namenode.kerberos.principal=nn/_HOST@EXAMPLE.COM
+HDFS-SITE.XML_dfs.namenode.keytab.file=/opt/hadoop/etc/hadoop/nn.keytab
 HDFS-SITE.XML_dfs.datanode.kerberos.principal=dn/_HOST@EXAMPLE.COM
 HDFS-SITE.XML_dfs.datanode.keytab.file=/opt/hadoop/etc/hadoop/dn.keytab
 HDFS-SITE.XML_dfs.web.authentication.kerberos.keytab=/opt/hadoop/etc/hadoop/HTTP.keytab
@@ -72,7 +72,7 @@ SSL-CLIENT.XML_ssl.client.keystore.keypassword=Welcome1
 SSL-CLIENT.XML_ssl.client.truststore.location=/opt/hadoop/etc/hadoop/truststore
 SSL-CLIENT.XML_ssl.client.truststore.password=Welcome1
 
-YARN-SITE.XML_yarn.resourcemanager.principal=rm/resourcemanager@EXAMPLE.COM
+YARN-SITE.XML_yarn.resourcemanager.principal=rm/_HOST@EXAMPLE.COM
 YARN-SITE.XML_yarn.resourcemanager.keytab=/opt/hadoop/etc/hadoop/rm.keytab
 YARN-SITE.XML_yarn.nodemanager.principal=nm/_HOST@EXAMPLE.COM
 YARN-SITE.XML_yarn.nodemanager.keytab=/opt/hadoop/etc/hadoop/nm.keytab
@@ -85,7 +85,7 @@ YARN-SITE.XML_yarn.resourcemanager.webapp.spnego-principal=HTTP/_HOST@EXAMPLE.CO
 YARN-SITE.XML_yarn.nodemanager.webapp.spnego-keytab-file=/opt/hadoop/etc/hadoop/HTTP.keytab
 YARN-SITE.XML_yarn.nodemanager.webapp.spnego-principal=HTTP/_HOST@EXAMPLE.COM
 
-KERBEROS_KEYTABS=dn hdfs HTTP rm ts wp nm oozie
+KERBEROS_KEYTABS=dn nn HTTP rm ts wp nm oozie
 KERBEROS_KEYSTORES=hadoop oozie
 LAUNCHER_UPDATE=false
 

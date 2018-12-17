@@ -69,6 +69,16 @@ def _generate_docker_compose_file_text(input_component_config: Dict[str, Any], c
             docker_compose_part = yaml.load(file)
             docker_compose_parts[component] = docker_compose_part
 
+    if configuration.kerberos:
+        # TODO
+        krb5 = """
+services:
+    krb5:
+        image: flokkr/krb5
+        ports:
+          - 8081:8081"""
+        docker_compose_parts["krb5"] = yaml.load(krb5)
+
     customised_services = {component : value.get("services", {})
                            for component, value in input_component_config.items()}
 
