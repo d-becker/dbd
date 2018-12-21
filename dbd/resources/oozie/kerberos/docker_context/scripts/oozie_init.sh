@@ -6,4 +6,6 @@ OOZIE_HADOOP_FILES="/opt/oozie/conf/hadoop-config.xml \
 echo "$OOZIE_HADOOP_FILES" | xargs sed -ie "s|hdfs/_HOST|nn/_HOST|g" && \
 echo "$OOZIE_HADOOP_FILES" | xargs sed -ie "s/LOCALREALM/EXAMPLE.COM/g" && \
 /opt/hadoop/resolve_HOSTs.py --oozie
-/opt/oozie/scripts/setup-oozie.sh
+
+# Sourcing it to be able to set environment variables.
+source /opt/oozie/scripts/setup-oozie.sh

@@ -29,6 +29,3 @@ COPY oozie-site_additional.xml .
 # Add the contents of the oozie-site_additional.xml file to oozie-site.xml.
 RUN python3 scripts/xmlcombine.py /opt/oozie/conf/oozie-site.xml ./oozie-site_additional.xml > tmp.xml \
     && mv tmp.xml /opt/oozie/conf/oozie-site.xml
-
-# Set the Oozie URL
-ENV OOZIE_URL http://oozieserver:11000/oozie

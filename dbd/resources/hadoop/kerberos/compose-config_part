@@ -85,7 +85,7 @@ YARN-SITE.XML_yarn.resourcemanager.webapp.spnego-principal=HTTP/_HOST@EXAMPLE.CO
 YARN-SITE.XML_yarn.nodemanager.webapp.spnego-keytab-file=/opt/hadoop/etc/hadoop/HTTP.keytab
 YARN-SITE.XML_yarn.nodemanager.webapp.spnego-principal=HTTP/_HOST@EXAMPLE.COM
 
-KERBEROS_KEYTABS=dn nn HTTP rm ts wp nm oozie
+KERBEROS_KEYTABS=dn nn HTTP rm ts wp nm
 KERBEROS_KEYSTORES=hadoop oozie
 LAUNCHER_UPDATE=false
 

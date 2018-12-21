@@ -31,7 +31,7 @@
 
     <property>
         <name>oozie.service.HadoopAccessorService.keytab.file</name>
-        <value>/opt/hadoop/etc/hadoop/oozie.keytab</value>
+        <value>/opt/oozie/oozie-http.keytab</value>
     </property>
 
     <property>
@@ -46,7 +46,7 @@
 
     <property>
         <name>oozie.authentication.kerberos.principal</name>
-        <value>*</value>
+        <value>HTTP/_HOST</value>
     </property>
 
     <property>
@@ -57,7 +57,7 @@
     <!-- Also differences between secure and unsecure setup, trying them.-->
     <property>
         <name>oozie.https.enabled</name>
-        <value>true</value>
+        <value>false</value>
     </property>
 
     <property>

@@ -5,6 +5,17 @@ function log {
         echo "$message" >> docker_oozie_logs.txt
 }
 
+function get_fqdn {
+    local IP="$(dig +short $(hostname))"
+    local HOST_NAME_TMP="$(dig +short -x "$IP")"
+
+    # Delete the last '.' character that dig adds to the reverse DNS result.
+    local HOST_NAME="${HOST_NAME_TMP%?}"
+
+    log "Reverse DNS FQDN is $HOST_NAME."
+    echo "$HOST_NAME"
+}
+
 function merge_hadoop_core_site_xml_with_oozie_core_site_xml {
     python3 scripts/xmlcombine.py /opt/oozie/conf/hadoop-conf/core-site.xml /opt/hadoop/etc/hadoop/core-site.xml > tmp.xml && \
     mv tmp.xml /opt/oozie/conf/hadoop-conf/core-site.xml && \
@@ -12,14 +23,39 @@ function merge_hadoop_core_site_xml_with_oozie_core_site_xml {
     log "Successfully copied the contents of the Hadoop core-site.xml to the Oozie configuration."
 }
 
+function set_oozie_url {
+    local FQDN="$1"
+
+    export OOZIE_URL="http://${FQDN}:11000/oozie"
+}
+
+function get_oozie_keytab {
+    local KERBEROS_SERVER="${KERBEROS_SERVER:-krb5}"
+    local ISSUER_SERVER="${ISSUER_SERVER:-$KERBEROS_SERVER:8081}"
+
+    local HOST_NAME="$1"
+
+    local OOZIE_KEYTAB="/opt/oozie/oozie.keytab"
+    local OOZIE_HTTP_KEYTAB="/opt/oozie/http.keytab"
+    local OOZIE_MERGED_KEYTAB="/opt/oozie/oozie-http.keytab"
+
+    wget http://"$ISSUER_SERVER"/keytab/"$HOST_NAME"/oozie -O "$OOZIE_KEYTAB" && \
+    log "Downloaded keytab $OOZIE_KEYTAB." && \
+    
+    wget http://"$ISSUER_SERVER"/keytab/"$HOST_NAME"/HTTP -O "$OOZIE_HTTP_KEYTAB" && \
+    log "Downloaded keytab $OOZIE_HTTP_KEYTAB" && \
+    
+    printf "%b" "rkt /opt/oozie/oozie.keytab\nrkt /opt/oozie/http.keytab\nwkt $OOZIE_MERGED_KEYTAB" | ktutil && \
+    log "Merged Oozie keytabs into $OOZIE_MERGED_KEYTAB."
+}
+
 function get_kerberos_tgt {
-    local IP="$(dig +short $(hostname))"
-    local HOST_NAME_TMP="$(dig +short -x "$IP")"
+    local HOST_NAME="$1"
 
-    # Delete the last '.' character that dig adds to the reverse DNS result.
-    local HOST_NAME="${HOST_NAME_TMP%?}"
+    get_oozie_keytab "$HOST_NAME" && \
 
-    kinit -kt /opt/hadoop/etc/hadoop/oozie.keytab oozie/"$HOST_NAME"
+    kinit -kt /opt/oozie/oozie-http.keytab oozie/"$HOST_NAME" && \
+    log "Obtained Kerberos TGT."
 }
 
 function wait_for_hadoop {
@@ -57,10 +93,17 @@ function start_oozie {
     /opt/oozie/bin/oozied.sh run
 }
 
-merge_hadoop_core_site_xml_with_oozie_core_site_xml && \
-get_kerberos_tgt && \
-wait_for_hadoop && \
-set_up_hdfs_oozie_directory && \
-upload_sharelib && \
-set_write_permissions_on_hdfs && \
-start_oozie
+function main {
+    local HOST_NAME="$(get_fqdn)"
+
+    merge_hadoop_core_site_xml_with_oozie_core_site_xml && \
+    set_oozie_url "$HOST_NAME" && \
+    get_kerberos_tgt "$HOST_NAME" && \
+    wait_for_hadoop && \
+    set_up_hdfs_oozie_directory && \
+    upload_sharelib && \
+    set_write_permissions_on_hdfs && \
+    start_oozie
+}
+
+main
