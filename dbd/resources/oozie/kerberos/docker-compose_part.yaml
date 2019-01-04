@@ -9,6 +9,6 @@ services:
         - ./compose-config
    historyserver:
       image: ${HADOOP_IMAGE}
-      command: ["mapred", "historyserver"]
+      command: [/bin/bash, -c, '"/opt/hadoop/resolve_HOSTs.py --hadoop && mapred historyserver"']
       env_file:
         - ./compose-config

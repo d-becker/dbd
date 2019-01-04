@@ -48,6 +48,9 @@ def get_host_from_property_name(name: str) -> Optional[str]:
     for host in hosts:
         if host in name:
             return host
+
+    if "jobhistory" in name:
+        return "historyserver"
         
     return None
 

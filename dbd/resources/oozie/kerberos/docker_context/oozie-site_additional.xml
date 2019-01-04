@@ -51,7 +51,8 @@
 
     <property>
         <name>oozie.authentication.kerberos.name.rules</name>
-        <value>RULE:[2:$1@$0](.*)s/.*/root/</value>
+        <!-- <value>RULE:[2:$1@$0](.*)s/.*/root/</value> -->
+        <value>DEFAULT</value>
     </property>
 
     <!-- Also differences between secure and unsecure setup, trying them.-->

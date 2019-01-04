@@ -16,6 +16,11 @@ function get_fqdn {
     echo "$HOST_NAME"
 }
 
+function copy_hadoop_site_xmls {
+    # Copy the *-site.xml files from the Hadoop folder, except for core-site.xml that will be handled separately.
+    cp $(find /opt/hadoop/etc/hadoop -name "*-site.xml" | grep -v core-site.xml) /opt/oozie/conf/hadoop-conf/
+}
+
 function merge_hadoop_core_site_xml_with_oozie_core_site_xml {
     python3 scripts/xmlcombine.py /opt/oozie/conf/hadoop-conf/core-site.xml /opt/hadoop/etc/hadoop/core-site.xml > tmp.xml && \
     mv tmp.xml /opt/oozie/conf/hadoop-conf/core-site.xml && \
@@ -24,6 +29,7 @@ function merge_hadoop_core_site_xml_with_oozie_core_site_xml {
 }
 
 function set_oozie_url {
+    # TODO: This doesn't do much as the script only modifies its own env vars.
     local FQDN="$1"
 
     export OOZIE_URL="http://${FQDN}:11000/oozie"
@@ -96,6 +102,7 @@ function start_oozie {
 function main {
     local HOST_NAME="$(get_fqdn)"
 
+    copy_hadoop_site_xmls && \
     merge_hadoop_core_site_xml_with_oozie_core_site_xml && \
     set_oozie_url "$HOST_NAME" && \
     get_kerberos_tgt "$HOST_NAME" && \

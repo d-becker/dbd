@@ -1,3 +1,6 @@
 CORE-SITE.XML_hadoop.proxyuser.oozie.hosts=*
 CORE-SITE.XML_hadoop.proxyuser.oozie.groups=*
-CORE-SITE.XML_hadoop.user.group.static.mapping.overrides=oozie=supergroup
+CORE-SITE.XML_hadoop.user.group.static.mapping.overrides=oozie=supergroup;jhs=supergroup
+
+MAPRED-SITE.XML_mapreduce.jobhistory.keytab=/opt/hadoop/etc/hadoop/jhs.keytab
+MAPRED-SITE.XML_mapreduce.jobhistory.principal=jhs/_HOST@EXAMPLE.COM
