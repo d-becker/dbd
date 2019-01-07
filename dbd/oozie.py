@@ -14,9 +14,12 @@ import tarfile
 import tempfile
 from typing import Any, Dict, List
 
+import docker
+
 from dbd.configuration import Configuration
 from dbd.component_builder import ComponentImageBuilder
 from dbd.component_config import DistInfo, DistType
+import dbd.defaults
 from dbd.default_component_image_builder.assembly import Assembly
 from dbd.default_component_image_builder.builder import DefaultComponentImageBuilder
 from dbd.default_component_image_builder.cache import Cache
@@ -127,11 +130,13 @@ class OoziePipelineBuilder(PipelineBuilder):
 
     def build_pipeline(self,
                        built_config: Configuration,
+                       component_input_config: Dict[str, Any],
                        assembly: Assembly,
                        image_name: str,
                        dist_info: DistInfo,
                        docker_context_dir: Path) -> Pipeline:
         pipeline = self._default_builder.build_pipeline(built_config,
+                                                        component_input_config,
                                                         assembly,
                                                         image_name,
                                                         dist_info,
@@ -142,6 +147,17 @@ class OoziePipelineBuilder(PipelineBuilder):
             build_oozie_stage = BuildOozieStage("distro", DefaultShellCommandExecutor(), hadoop_version)
             pipeline.inner_stages.insert(0, build_oozie_stage)
 
+        dependencies = {dependency : built_config.components[dependency]
+                        for dependency in assembly.dependencies}
+        hbase_common_jar_version = component_input_config.get("hbase-common-jar-version",
+                                                              dbd.defaults.HBASE_COMMON_JAR_VERSION)
+        build_args = {"HBASE_COMMON_JAR_VERSION": hbase_common_jar_version}
+
+        pipeline.final_stage = DefaultPipelineBuilder.get_docker_image_stage(docker.from_env(),
+                                                                             image_name,
+                                                                             dependencies,
+                                                                             docker_context_dir,
+                                                                             build_args)
         return pipeline
 
 def get_image_builder(assembly: Dict[str, Any], cache: Cache) -> ComponentImageBuilder:

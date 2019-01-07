@@ -26,6 +26,10 @@ WORKDIR /opt/oozie
 COPY scripts ./scripts
 COPY oozie-site_additional.xml .
 
+# Download the hbase-common.jar file.
+ARG HBASE_COMMON_JAR_VERSION
+RUN wget http://central.maven.org/maven2/org/apache/hbase/hbase-common/${HBASE_COMMON_JAR_VERSION}/hbase-common-${HBASE_COMMON_JAR_VERSION}.jar
+
 # Add the contents of the oozie-site_additional.xml file to oozie-site.xml.
 RUN python3 scripts/xmlcombine.py /opt/oozie/conf/oozie-site.xml ./oozie-site_additional.xml > tmp.xml \
     && mv tmp.xml /opt/oozie/conf/oozie-site.xml

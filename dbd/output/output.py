@@ -13,6 +13,8 @@ import yaml
 from dbd.configuration import Configuration
 from dbd.component_config import DistType
 
+import dbd.defaults
+
 import dbd.output.docker_compose_generator
 
 def _generate_compose_config_file_text(sorted_components: List[str], configuration: Configuration) -> str:
@@ -70,15 +72,11 @@ def _generate_docker_compose_file_text(input_component_config: Dict[str, Any], c
             docker_compose_parts[component] = docker_compose_part
 
     if configuration.kerberos:
-        # TODO
-        krb5 = """
-services:
-    krb5:
-        image: flokkr/krb5
-        ports:
-          - 8081:8081"""
+        # TODO: Test this.
+        krb5 = dbd.defaults.KERBEROS_SERVICE_CONFIG
         docker_compose_parts["krb5"] = yaml.load(krb5)
 
+    # TODO: Test whether customised services work.
     customised_services = {component : value.get("services", {})
                            for component, value in input_component_config.items()}
 

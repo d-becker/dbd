@@ -82,8 +82,8 @@ components:
     release: 2.6.5
   oozie:
     release: 5.0.0
-	services:
-	  oozieserver: # One of the services belonging to the Oozie component
+    services:
+      oozieserver: # One of the services belonging to the Oozie component
 	    ports:
 		  - 11000:11000
 		  - 11002:11002

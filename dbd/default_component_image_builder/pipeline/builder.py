@@ -7,7 +7,7 @@ This module contains the `PipelineBuilder` interface and a default implementatio
 from abc import ABCMeta, abstractmethod
 from pathlib import Path
 
-from typing import Dict, Optional
+from typing import Any, Dict, Optional
 
 import docker
 
@@ -30,6 +30,7 @@ class PipelineBuilder(metaclass=ABCMeta):
     @abstractmethod
     def build_pipeline(self,
                        built_config: Configuration,
+                       component_input_config: Dict[str, Any],
                        assembly: Assembly,
                        image_name: str,
                        dist_info: DistInfo,
@@ -40,6 +41,8 @@ class PipelineBuilder(metaclass=ABCMeta):
         Args:
             built_config: A `Configuration` object that contains information about
                 previously built components and images. This should never be modified.
+            component_input_config: A dictionary of component-specific extra configuration.
+                This is inside the `release` or `snapshot` section in the `BuildConfiguration` file.
             assembly: An object holding component-specific information.
             image_name: The name of the docker image that will be built.
             dist_info: Information about the distribution type (release or snapshot).
@@ -59,6 +62,7 @@ class DefaultPipelineBuilder(PipelineBuilder):
 
     def build_pipeline(self,
                        built_config: Configuration,
+                       component_input_config: Dict[str, Any],
                        assembly: Assembly,
                        image_name: str,
                        dist_info: DistInfo,
@@ -68,12 +72,45 @@ class DefaultPipelineBuilder(PipelineBuilder):
         dependencies = {dependency : built_config.components[dependency]
                         for dependency in assembly.dependencies}
 
-        docker_image_stage = DefaultPipelineBuilder._get_docker_image_stage(docker.from_env(),
-                                                                            image_name,
-                                                                            dependencies,
-                                                                            docker_context_dir)
+        docker_image_stage = DefaultPipelineBuilder.get_docker_image_stage(docker.from_env(),
+                                                                           image_name,
+                                                                           dependencies,
+                                                                           docker_context_dir,
+                                                                           dict())
 
         return Pipeline(entry_stage, [], docker_image_stage)
+
+    @staticmethod
+    def get_docker_image_stage(docker_client: docker.DockerClient,
+                               image_name: str,
+                               dependencies: Dict[str, ComponentConfig],
+                               docker_context_dir: Path,
+                               build_args: Dict[str, str]) -> BuildDockerImageStage:
+        """
+        Returns a `BuildDockerImageStage` object with the given parameters.
+
+        Args:
+            docker_client: A docker client object.
+            image_name: The name of the image the `BuildDockerImageStage` will build.
+            dependencies: A dictionary with the dependencies of the component to be built, where
+                the keys are the names and the values are the configuration of the dependencies.
+            docker_context_dir: The path to the directory that will be
+                the docker context when building the docker image.
+            build_args: A dictionary of arguments in the Dockerfile.
+
+        Returns:
+            A `BuildDockerImageStage` object with the given parameters.
+
+        """
+
+        dependency_images = {key : dependencies[key].image_name for key in dependencies}
+
+        return BuildDockerImageStage("docker",
+                                     docker_client,
+                                     image_name,
+                                     dependency_images,
+                                     docker_context_dir,
+                                     build_args)
 
     @staticmethod
     def _get_entry_stage(dist_info: DistInfo, url_template: Optional[str]) -> EntryStage:
@@ -92,16 +129,3 @@ class DefaultPipelineBuilder(PipelineBuilder):
 
             source_dir = Path(dist_info.argument).expanduser().resolve()
             return CreateTarfileStage("archive", source_dir)
-
-    @staticmethod
-    def _get_docker_image_stage(docker_client: docker.DockerClient,
-                                image_name: str,
-                                dependencies: Dict[str, ComponentConfig],
-                                docker_context_dir: Path) -> BuildDockerImageStage:
-        dependency_images = {key : dependencies[key].image_name for key in dependencies}
-
-        return BuildDockerImageStage("docker",
-                                     docker_client,
-                                     image_name,
-                                     dependency_images,
-                                     docker_context_dir)

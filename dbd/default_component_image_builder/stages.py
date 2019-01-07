@@ -17,6 +17,7 @@ from typing import Dict, Iterable
 
 import docker
 
+import dbd.defaults
 from dbd.default_component_image_builder.pipeline import EntryStage, FinalStage
 
 class CreateTarfileStage(EntryStage):
@@ -124,7 +125,8 @@ class BuildDockerImageStage(FinalStage):
                  docker_client: docker.DockerClient,
                  image_name: str,
                  dependency_images: Dict[str, str],
-                 build_context: Path) -> None:
+                 build_context: Path,
+                 build_args: Dict[str, str]) -> None:
         """
         Creates a new `BuildDockerImageStage` object.
 
@@ -137,6 +139,8 @@ class BuildDockerImageStage(FinalStage):
                 names of the already built docker images of those components.
             build_context: The path to the static (non-generated) resources that need
                 to be present in the docker build directory when the image is built.
+            build_args: A dictionary of build arguments used in the Dockerfile. Names of the
+                dependency images should not be included as these will be added automatically.
         """
 
         self._name = name
@@ -144,6 +148,8 @@ class BuildDockerImageStage(FinalStage):
         self._image_name = image_name
         self._dependency_images = dependency_images
         self._build_context = build_context.expanduser().resolve()
+        self._build_args = build_args
+        self._generated_dir_name = dbd.defaults.DOCKER_CONTEXT_GENERATED_DIR_NAME
 
     def name(self) -> str:
         return self._name
@@ -151,17 +157,14 @@ class BuildDockerImageStage(FinalStage):
     def execute(self, input_path: Path) -> None:
         logging.info("Stage %s: building docker image %s.", self.name(), self._image_name)
 
-        buildargs = {"{}_IMAGE".format(component.upper()) : image
-                     for (component, image) in self._dependency_images.items()}
-        generated_dir_name = "generated"
-        buildargs["GENERATED_DIR"] = generated_dir_name
+        buildargs = self.get_build_args()
 
         with tempfile.TemporaryDirectory() as tmp:
             tmp_context = Path(tmp)
 
             BuildDockerImageStage._copy_all(self._build_context.iterdir(), tmp_context)
 
-            generated_dir_path = tmp_context / generated_dir_name
+            generated_dir_path = tmp_context / self._generated_dir_name
             generated_dir_path.mkdir()
             BuildDockerImageStage._copy_tree_or_file(input_path, generated_dir_path)
 
@@ -169,6 +172,23 @@ class BuildDockerImageStage(FinalStage):
                                              buildargs=buildargs,
                                              tag=self._image_name,
                                              rm=True)
+
+    def get_build_args(self) -> Dict[str, str]:
+        """
+        Returns a dictionary with the build arguments in the Dockerfile that will be passed to Docker.
+
+        Returns:
+            A dictionary with the build arguments in the Dockerfile that will be passed to Docker.
+
+        """
+
+        buildargs = {"{}_IMAGE".format(component.upper()) : image
+                     for (component, image) in self._dependency_images.items()}
+
+        buildargs.update(self._build_args)
+        buildargs["GENERATED_DIR"] = self._generated_dir_name
+
+        return buildargs
 
     @staticmethod
     def _copy_all(items: Iterable[Path], dst: Path) -> None:

@@ -20,6 +20,7 @@ class PipelineBuilderTestCase(TmpDirTestCase):
                                            "test_repository",
                                            kerberos,
                                            self._tmp_dir_path),
+            "component_input_config": dict(),
             "assembly" : Assembly.from_dict({"url": "some_url"}),
             "image_name" : "test_image",
             "dist_info" : DistInfo(DistType.SNAPSHOT, "path/to/snapshot_build"),

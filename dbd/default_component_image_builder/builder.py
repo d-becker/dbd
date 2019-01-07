@@ -13,7 +13,7 @@ from pathlib import Path
 
 import re
 
-from typing import Dict, Iterable, List, Tuple
+from typing import Any, Dict, Iterable, List, Tuple
 
 import docker
 
@@ -77,7 +77,7 @@ class DefaultComponentImageBuilder(ComponentImageBuilder):
         return self._assembly.dependencies
 
     def build(self,
-              component_config: Dict[str, str],
+              component_config: Dict[str, Any],
               built_config: Configuration,
               force_rebuild: bool = False) -> ComponentConfig:
         (dist_type, argument) = _dist_type_and_arg(component_config)
@@ -89,6 +89,7 @@ class DefaultComponentImageBuilder(ComponentImageBuilder):
         docker_context = built_config.get_docker_context(self.name())
 
         pipeline = self._pipeline_builder.build_pipeline(built_config,
+                                                         component_config,
                                                          self._assembly,
                                                          image_name,
                                                          dist_info,

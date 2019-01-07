@@ -87,6 +87,10 @@ function upload_sharelib {
     log "Successfully uploaded the sharelib."
 }
 
+function move_hbase_common_jar_to_lib {
+    mv /opt/oozie/hbase-common-*.jar /opt/oozie/lib
+}
+
 function set_write_permissions_on_hdfs {
     hdfs dfs -chmod -R a+rwx / && \
     \
@@ -109,6 +113,7 @@ function main {
     wait_for_hadoop && \
     set_up_hdfs_oozie_directory && \
     upload_sharelib && \
+    move_hbase_common_jar_to_lib && \
     set_write_permissions_on_hdfs && \
     start_oozie
 }

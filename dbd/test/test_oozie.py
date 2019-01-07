@@ -4,7 +4,7 @@
 
 import tarfile
 import tempfile
-from typing import List
+from typing import Dict, List
 from pathlib import Path
 
 from dbd.component_config import ComponentConfig, DistInfo, DistType
@@ -77,3 +77,22 @@ class TestOoziePipelineBuilder(PipelineBuilderTestCase):
         self.assertEqual(1, len(pipeline.inner_stages))
         self.assertTrue(isinstance(pipeline.inner_stages[0], BuildOozieStage))
         self.assertTrue(isinstance(pipeline.final_stage, BuildDockerImageStage))
+
+    def test_hbase_jar_version_argument_is_added(self) -> None:
+        jar_version = "1.1.1"
+        arguments = self.get_default_arguments()
+        arguments["component_input_config"] = {"snapshot": "/path/to/distribution",
+                                               "hbase-common-jar-version": jar_version}
+
+        pipeline_builder = OoziePipelineBuilder()
+
+        pipeline = pipeline_builder.build_pipeline(**arguments)
+
+        docker_stage = pipeline.final_stage
+
+        assert isinstance(docker_stage, BuildDockerImageStage)
+        build_args: Dict[str, str] = docker_stage.get_build_args()
+
+        hbase_common_jar_version_string = "HBASE_COMMON_JAR_VERSION"
+        self.assertTrue(hbase_common_jar_version_string in build_args)
+        self.assertEqual(jar_version, build_args[hbase_common_jar_version_string])

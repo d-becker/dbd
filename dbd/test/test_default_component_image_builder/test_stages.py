@@ -115,11 +115,14 @@ class TestBuildDockerImageStage(TmpDirTestCase):
         input_file = self._tmp_dir_path / input_file_name
         input_file.touch()
 
+        build_args = {"ARG1": "value1", "ARG2": "value2"}
+
         stage = BuildDockerImageStage("docker",
                                       docker_client,
                                       image_name,
                                       dependency_images,
-                                      build_context_resources)
+                                      build_context_resources,
+                                      build_args)
 
         stage.execute(input_file)
 
@@ -131,12 +134,14 @@ class TestBuildDockerImageStage(TmpDirTestCase):
         expected_buildargs = {"{}_IMAGE".format(component_name.upper()) : image_name
                               for (component_name, image_name) in dependency_images.items()}
         expected_buildargs["GENERATED_DIR"] = "generated"
+        expected_buildargs.update(build_args)
         self.assertEqual(expected_buildargs, called_args["buildargs"])
 
         build_directory = Path(called_args["path"])
         files_in_build_directory: List[Path] = docker_client.images.files_in_context
 
         present_in_build_directory: Callable[[Path], bool] = lambda p: (build_directory / p) in files_in_build_directory
+
         self.assertTrue(all(map(present_in_build_directory, files_in_build_context_resources)))
 
         self.assertTrue((build_directory / "generated" / input_file.name) in files_in_build_directory)
