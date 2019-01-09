@@ -12,8 +12,7 @@ from dbd.default_component_image_builder.assembly import Assembly
 from ...temp_dir_test_case import TmpDirTestCase
 
 class PipelineBuilderTestCase(TmpDirTestCase):
-    def get_default_arguments(self) -> Dict[str, Any]:
-        kerberos = False
+    def get_default_arguments(self, kerberos: bool = False) -> Dict[str, Any]:
         return {
             "built_config" : Configuration("test_configuration_name",
                                            "0001",

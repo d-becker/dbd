@@ -78,9 +78,15 @@ class TestOoziePipelineBuilder(PipelineBuilderTestCase):
         self.assertTrue(isinstance(pipeline.inner_stages[0], BuildOozieStage))
         self.assertTrue(isinstance(pipeline.final_stage, BuildDockerImageStage))
 
-    def test_hbase_jar_version_argument_is_added(self) -> None:
+    def test_hbase_jar_version_argument_is_added_if_kerberised(self) -> None:
+        self._test_hbase_jar_version_argument_is_added(True)
+
+    def test_hbase_jar_version_argument_is_not_added_if_not_kerberised(self) -> None:
+        self._test_hbase_jar_version_argument_is_added(False)
+
+    def _test_hbase_jar_version_argument_is_added(self, kerberos: bool) -> None:
         jar_version = "1.1.1"
-        arguments = self.get_default_arguments()
+        arguments = self.get_default_arguments(kerberos)
         arguments["component_input_config"] = {"snapshot": "/path/to/distribution",
                                                "hbase-common-jar-version": jar_version}
 
@@ -94,5 +100,7 @@ class TestOoziePipelineBuilder(PipelineBuilderTestCase):
         build_args: Dict[str, str] = docker_stage.get_build_args()
 
         hbase_common_jar_version_string = "HBASE_COMMON_JAR_VERSION"
-        self.assertTrue(hbase_common_jar_version_string in build_args)
-        self.assertEqual(jar_version, build_args[hbase_common_jar_version_string])
+        self.assertEqual(kerberos, hbase_common_jar_version_string in build_args)
+
+        if kerberos:
+            self.assertEqual(jar_version, build_args[hbase_common_jar_version_string])

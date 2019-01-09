@@ -3,6 +3,10 @@
 """
 This module contains the function that creates `ComponentImageBuilder`s for the
 Oozie component and some Oozie-specific classes that the function depends on.
+
+For kerberised Oozie component, you can specify the "hbase-common-jar-version" configuration option
+in the `BuildConfiguration file. Its value is the version number of the hbase-common-{version}.jar
+that will be added to the Oozie image.
 """
 
 from abc import ABCMeta, abstractmethod
@@ -149,15 +153,18 @@ class OoziePipelineBuilder(PipelineBuilder):
 
         dependencies = {dependency : built_config.components[dependency]
                         for dependency in assembly.dependencies}
-        hbase_common_jar_version = component_input_config.get("hbase-common-jar-version",
-                                                              dbd.defaults.HBASE_COMMON_JAR_VERSION)
-        build_args = {"HBASE_COMMON_JAR_VERSION": hbase_common_jar_version}
 
-        pipeline.final_stage = DefaultPipelineBuilder.get_docker_image_stage(docker.from_env(),
-                                                                             image_name,
-                                                                             dependencies,
-                                                                             docker_context_dir,
-                                                                             build_args)
+        # If using Kerberos, add hbase-common-jar-version argument to the Docker build process.
+        if built_config.kerberos:
+            hbase_common_jar_version = component_input_config.get("hbase-common-jar-version",
+                                                                  dbd.defaults.HBASE_COMMON_JAR_VERSION)
+            build_args = {"HBASE_COMMON_JAR_VERSION": hbase_common_jar_version}
+
+            pipeline.final_stage = DefaultPipelineBuilder.get_docker_image_stage(docker.from_env(),
+                                                                                 image_name,
+                                                                                 dependencies,
+                                                                                 docker_context_dir,
+                                                                                 build_args)
         return pipeline
 
 def get_image_builder(assembly: Dict[str, Any], cache: Cache) -> ComponentImageBuilder:
