@@ -1,8 +1,11 @@
 #!/bin/bash
 
 function log {
-        local message=$1
-        echo "$message" >> docker_oozie_logs.txt
+    local message=$1
+
+    local current_date=$(date +%Y-%m-%d\ %H:%M:%S)
+    
+    echo "$current_date $message" >> docker_oozie_logs.txt
 }
 
 function get_fqdn {
@@ -65,9 +68,10 @@ function get_kerberos_tgt {
 }
 
 function wait_for_hadoop {
-    while [ "$(hdfs dfsadmin -report)" = "" ]
+    until hdfs dfsadmin -report;
     do
-        sleep 0.5
+	log "HDFS is not ready." && \
+	sleep 0.5;
     done
 
     log "Hdfs is up and running."
