@@ -13,9 +13,10 @@ function merge_hadoop_core_site_xml_with_oozie_core_site_xml {
 }
 
 function wait_for_hadoop {
-    while [ "$(hdfs dfsadmin -report)" = "" ]
+    until hdfs dfsadmin -report;
     do
-        sleep 0.5
+	log "HDFS is not ready." && \
+	sleep 0.5;
     done
 
     log "Hdfs is up and running."
