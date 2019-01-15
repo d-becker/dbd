@@ -79,7 +79,8 @@ def resolve_in_property(property: ET.Element) -> bool:
         # datanode, we should not have it listed, because for example
         # the name node will not accept other datanodes if one is
         # given, which does not let us scale.
-        # TODO: Maybe we should get the parent and delete property.
+        # Note: It should be cleaner to get the parent and delete property,
+        # but it would require more complex code.
         property.remove(value_element)
         property.remove(name_element)
         return True
@@ -118,11 +119,9 @@ def main() -> None:
     file_paths = map(Path, args.xml_files)
 
     if args.hadoop:
-        print("Hadoop files added.") # TODO
         file_paths = itertools.chain(file_paths, get_hadoop_files())
 
     if args.oozie:
-        print("Oozie file added.") # TODO
         file_paths = itertools.chain(file_paths, get_oozie_files())
 
     resolve_HOSTs_in_files(file_paths)

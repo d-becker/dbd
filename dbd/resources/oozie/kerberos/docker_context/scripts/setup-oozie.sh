@@ -31,13 +31,6 @@ function merge_hadoop_core_site_xml_with_oozie_core_site_xml {
     log "Successfully copied the contents of the Hadoop core-site.xml to the Oozie configuration."
 }
 
-function set_oozie_url {
-    # TODO: This doesn't do much as the script only modifies its own env vars.
-    local FQDN="$1"
-
-    export OOZIE_URL="http://${FQDN}:11000/oozie"
-}
-
 function get_oozie_keytab {
     local KERBEROS_SERVER="${KERBEROS_SERVER:-krb5}"
     local ISSUER_SERVER="${ISSUER_SERVER:-$KERBEROS_SERVER:8081}"
@@ -112,7 +105,6 @@ function main {
 
     copy_hadoop_site_xmls && \
     merge_hadoop_core_site_xml_with_oozie_core_site_xml && \
-    set_oozie_url "$HOST_NAME" && \
     get_kerberos_tgt "$HOST_NAME" && \
     wait_for_hadoop && \
     set_up_hdfs_oozie_directory && \
