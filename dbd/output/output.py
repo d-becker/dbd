@@ -38,6 +38,7 @@ def _generate_config_report(configuration: Configuration) -> str:
 
     text.write("name: {}\n".format(configuration.name))
     text.write("timestamp: {}\n".format(configuration.timestamp))
+    text.write("component-order: {}\n".format(configuration.get_component_order()))
     text.write("components:\n")
 
     indentation = "  "

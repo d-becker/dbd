@@ -3,10 +3,12 @@
 # pylint: disable=missing-docstring
 
 from pathlib import Path
+from typing import Dict, List
 
 import unittest
 
-from  dbd.configuration import Configuration
+from dbd.component_config import ComponentConfig, DistType
+from dbd.configuration import Configuration
 
 class TestConfiguration(unittest.TestCase):
     NAME: str = "config_name"
@@ -35,6 +37,17 @@ class TestConfiguration(unittest.TestCase):
                              kerberos,
                              TestConfiguration.RESOURCE_PATH)
 
+    @staticmethod
+    def _get_component_configs_with_names(names: List[str]) -> Dict[str, ComponentConfig]:
+        res = dict()
+        for index, name in enumerate(names):
+            component_config = ComponentConfig(DistType.RELEASE,
+                                               "{}.0.0".format(index),
+                                               "{}_IMAGE".format(name))
+            res[name] = component_config
+
+        return res
+
     def test_name(self) -> None:
         configuration = TestConfiguration._get_default_configuration()
 
@@ -59,6 +72,28 @@ class TestConfiguration(unittest.TestCase):
         configuration = TestConfiguration._get_default_configuration_security(False)
 
         self.assertFalse(configuration.kerberos)
+
+    def test_add_components(self) -> None:
+        configuration = TestConfiguration._get_default_configuration()
+        component_names = ["hadoop", "oozie"]
+        component_configs = TestConfiguration._get_component_configs_with_names(component_names)
+        
+        for component_name, component_config in component_configs.items():
+            configuration.components[component_name] = component_config
+
+        for component_name in component_names:
+            self.assertTrue(component_name in configuration.components)
+            self.assertEqual(component_configs[component_name], configuration.components[component_name])
+
+    def test_component_order(self) -> None:
+        configuration = TestConfiguration._get_default_configuration()
+        component_names = ["hadoop", "oozie", "hive"]
+        component_configs = TestConfiguration._get_component_configs_with_names(component_names)
+        
+        for component_name, component_config in component_configs.items():
+            configuration.components[component_name] = component_config
+        
+        self.assertEqual(component_names, configuration.get_component_order())
 
     def test_get_resource_dir(self) -> None:
         configuration = TestConfiguration._get_default_configuration()

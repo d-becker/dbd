@@ -4,8 +4,9 @@
 This module provides a class that stores the configuration of the overall build.
 """
 
+from collections import OrderedDict
 from pathlib import Path
-from typing import Dict
+from typing import Dict, List
 
 from dbd.component_config import ComponentConfig
 
@@ -38,7 +39,7 @@ class Configuration:
 
         self._kerberos = kerberos
         self._resource_path = resource_path
-        self.components: Dict[str, ComponentConfig] = {}
+        self._components: OrderedDict[str, ComponentConfig] = OrderedDict()
 
     @property
     def name(self) -> str:
@@ -70,6 +71,17 @@ class Configuration:
         Whether Kerberos is enabled.
         """
         return self._kerberos
+
+    @property
+    def components(self) -> Dict[str, ComponentConfig]:
+        """
+        Gives access to the component configurations.
+        """
+
+        return self._components
+
+    def get_component_order(self) -> List[str]:
+        return list(self._components.keys())
 
     def get_resource_dir(self, component_name: str) -> Path:
         """
