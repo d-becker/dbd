@@ -66,7 +66,7 @@ class TestOoziePipelineBuilder(PipelineBuilderTestCase):
 
     def test_oozie_builder_adds_build_oozie_stage_in_release_mode(self) -> None:
         arguments = self.get_default_arguments()
-        arguments["built_config"].components["hadoop"] = ComponentConfig(DistType.RELEASE, "2.8.5", "no-image")
+        arguments["built_config"].components["hadoop"] = ComponentConfig(DistType.RELEASE, "2.8.5", "no-image", False)
         arguments["dist_info"] = DistInfo(DistType.RELEASE, "5.0.0")
 
         pipeline_builder = OoziePipelineBuilder()

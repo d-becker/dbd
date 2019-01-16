@@ -61,7 +61,8 @@ class ComponentConfig:
     def __init__(self,
                  dist_type: DistType,
                  version: str,
-                 image_name: str) -> None:
+                 image_name: str,
+                 reused: bool) -> None:
         """
         Creates a new `ComponentConfig` object.
 
@@ -70,12 +71,14 @@ class ComponentConfig:
             version: The version number of the component in the image. It should be provided
                 irrespective of whether this is a release or a snapshot distribution.
             image_name: The name of the docker image that was built with the component.
+            reused: `True` if the image already existed and is reused; `False` if it was generated.
 
         """
 
         self._dist_type = dist_type
         self._version = version
         self._image_name = image_name
+        self._reused = reused
 
     @property
     def dist_type(self) -> DistType:
@@ -100,3 +103,7 @@ class ComponentConfig:
         """
 
         return self._image_name
+
+    @property
+    def reused(self) -> bool:
+        return self._reused

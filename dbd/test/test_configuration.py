@@ -43,7 +43,8 @@ class TestConfiguration(unittest.TestCase):
         for index, name in enumerate(names):
             component_config = ComponentConfig(DistType.RELEASE,
                                                "{}.0.0".format(index),
-                                               "{}_IMAGE".format(name))
+                                               "{}_IMAGE".format(name),
+                                               False)
             res[name] = component_config
 
         return res

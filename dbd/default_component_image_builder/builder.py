@@ -96,6 +96,7 @@ class DefaultComponentImageBuilder(ComponentImageBuilder):
                                                          docker_context)
         pipeline_executor = DefaultPipelineExecutor()
 
+        reused_docker_image = False
         if force_rebuild:
             pipeline_executor.execute_all(self.name(),
                                           dist_type,
@@ -109,6 +110,8 @@ class DefaultComponentImageBuilder(ComponentImageBuilder):
                                                  id_string,
                                                  self._cache,
                                                  pipeline)
+            else:
+                reused_docker_image = True
 
         version: str
         if dist_type == DistType.RELEASE:
@@ -127,7 +130,8 @@ class DefaultComponentImageBuilder(ComponentImageBuilder):
                                                    self.name(),
                                                    self._assembly.version_command,
                                                    self._assembly.version_regex)
-        return ComponentConfig(dist_type, version, image_name)
+        # TODO: Test correct `reuse_docker_image`.
+        return ComponentConfig(dist_type, version, image_name, reused_docker_image)
 
     def _get_image_name(self,
                         id_string: str,

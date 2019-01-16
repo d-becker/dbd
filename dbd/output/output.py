@@ -50,6 +50,7 @@ def _generate_config_report(configuration: Configuration) -> str:
                    + "\n")
         text.write(indentation * 2 + "version: " + config.version + "\n")
         text.write(indentation * 2 + "image_name: " + config.image_name + "\n")
+        text.write(indentation * 2 + "reused: " + str(config.reused).lower() + "\n")
 
     return text.getvalue()
 
