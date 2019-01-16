@@ -135,7 +135,7 @@ When the Oozie server process is running, you need to upload the Oozie examples 
 scripts/example_running/prepare_examples.sh
 ```
 
-Set the OOZIE_URL environment variable by sourcing the following script (only needed in kerberized clusters):
+Set the OOZIE_URL environment variable by sourcing the following script (only in kerberized clusters):
 
 ```
 source scripts/oozie_url.sh
