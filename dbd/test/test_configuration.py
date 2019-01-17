@@ -78,7 +78,7 @@ class TestConfiguration(unittest.TestCase):
         configuration = TestConfiguration._get_default_configuration()
         component_names = ["hadoop", "oozie"]
         component_configs = TestConfiguration._get_component_configs_with_names(component_names)
-        
+
         for component_name, component_config in component_configs.items():
             configuration.components[component_name] = component_config
 
@@ -90,10 +90,10 @@ class TestConfiguration(unittest.TestCase):
         configuration = TestConfiguration._get_default_configuration()
         component_names = ["hadoop", "oozie", "hive"]
         component_configs = TestConfiguration._get_component_configs_with_names(component_names)
-        
+
         for component_name, component_config in component_configs.items():
             configuration.components[component_name] = component_config
-        
+
         self.assertEqual(component_names, configuration.get_component_order())
 
     def test_get_resource_dir(self) -> None:

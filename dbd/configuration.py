@@ -39,7 +39,11 @@ class Configuration:
 
         self._kerberos = kerberos
         self._resource_path = resource_path
+
+        # pylint: disable=unsubscriptable-object
+        # The warning is generated because of the type annotation.
         self._components: OrderedDict[str, ComponentConfig] = OrderedDict()
+        # pylint: enable=unsubscriptable-object
 
     @property
     def name(self) -> str:
@@ -81,6 +85,10 @@ class Configuration:
         return self._components
 
     def get_component_order(self) -> List[str]:
+        """
+        Returns the names of the components in the order they are built.
+        """
+
         return list(self._components.keys())
 
     def get_resource_dir(self, component_name: str) -> Path:

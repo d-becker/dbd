@@ -11,7 +11,7 @@ import time
 
 from pathlib import Path
 
-from typing import Any, Dict, List, Set
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 import yaml
 
@@ -115,7 +115,7 @@ def _build_component_images(components: List[str],
                             input_configuration: Dict[str, Dict[str, str]],
                             initial_configuration: Configuration,
                             image_builders: Dict[str, ComponentImageBuilder],
-                            force_rebuild: List[str]) -> Configuration:
+                            force_rebuild: List[str]) -> Tuple[Configuration, Optional[Exception]]:
     resulting_configuration = initial_configuration
 
     logging.info("Building components in the following order: %s.", components)
@@ -124,10 +124,18 @@ def _build_component_images(components: List[str],
         component_conf = input_configuration[component]
         image_builder = image_builders[component]
         force_rebuild_component = component in force_rebuild
-        component_config = image_builder.build(component_conf, resulting_configuration, force_rebuild_component)
+
+        try:
+            component_config = image_builder.build(component_conf, resulting_configuration, force_rebuild_component)
+        # pylint: disable=broad-except
+        except Exception as exception:
+
+            return (resulting_configuration, exception)
+
+        # pylint: enable=broad-except
         resulting_configuration.components[component] = component_config
 
-    return resulting_configuration
+    return (resulting_configuration, None)
 
 def _get_dependencies_from_assemblies(assemblies: Dict[str, Dict[str, Any]]) -> Dict[str, List[str]]:
     dependencies: Dict[str, List[str]] = {}
@@ -206,13 +214,18 @@ def start_dbd(args: argparse.Namespace) -> None:
     image_builders = _get_component_image_builders(components, assemblies, cache)
 
     force_rebuild_components = _get_force_rebuild_components(args, components)
-    output_configuration = _build_component_images(topologically_sorted_components,
-                                                   input_conf["components"],
-                                                   initial_configuration,
-                                                   image_builders,
-                                                   force_rebuild_components)
+    (output_configuration, exception) = _build_component_images(topologically_sorted_components,
+                                                                input_conf["components"],
+                                                                initial_configuration,
+                                                                image_builders,
+                                                                force_rebuild_components)
 
-    dbd.output.generate_output(input_conf, output_configuration, Path(args.output_dir))
+    dbd.output.generate_output(input_conf, output_configuration, Path(args.output_dir), exception is not None)
+
+    if exception:
+        # We suppressed the exception to write output so that the user
+        # knows what to clean up, and now we re-throw the exception.
+        raise exception
 
     cache.enforce_max_size()
 

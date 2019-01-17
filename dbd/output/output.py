@@ -88,7 +88,8 @@ def _generate_docker_compose_file_text(input_component_config: Dict[str, Any], c
 
 def generate_output(input_config: Dict[str, Any],
                     configuration: Configuration,
-                    output_location: Path) -> None:
+                    output_location: Path,
+                    build_failed: bool) -> None:
     """
     Generates the output of the building process.
 
@@ -96,6 +97,7 @@ def generate_output(input_config: Dict[str, Any],
         input_conf: The dictionary that contains the contents of the `BuildConfiguration` file, provided by the user.
         configuration: The `Configuration` object that contains the information about the configuration build.
         output_location: The directory in which the output should be generated.
+        build_failed: If this parameter is `True`, only the 'output_configuration.yaml' file will be generated.
 
     Raises:
         ValueError: If `output_location` does not point to an existing directory.
@@ -113,6 +115,9 @@ def generate_output(input_config: Dict[str, Any],
     with (out / "output_configuration.yaml").open("w") as file:
         config_report = _generate_config_report(configuration)
         file.write(config_report)
+
+    if build_failed:
+        return
 
     with (out / ".env").open("w") as file:
         env_file_text = _generate_env_file_text(configuration)

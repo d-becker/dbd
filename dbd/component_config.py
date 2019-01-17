@@ -106,4 +106,8 @@ class ComponentConfig:
 
     @property
     def reused(self) -> bool:
+        """
+        `True` if the image already existed and is reused; `False` if it was generated.
+        """
+
         return self._reused
