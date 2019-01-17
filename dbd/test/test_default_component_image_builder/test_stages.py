@@ -111,8 +111,7 @@ class TestBuildDockerImageStage(TmpDirTestCase):
         dependency_images: Dict[str, str] = {"component_a": "component_a_image_name",
                                              "component_b": "component_b_image_name"}
 
-        input_file_name = "input_file.tar.gz"
-        input_file = self._tmp_dir_path / input_file_name
+        input_file = self._tmp_dir_path / "input_file.tar.gz"
         input_file.touch()
 
         build_args = {"ARG1": "value1", "ARG2": "value2"}
