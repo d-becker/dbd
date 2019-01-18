@@ -26,6 +26,10 @@ WORKDIR /opt/oozie
 COPY scripts ./scripts
 COPY oozie-site_additional.xml .
 
+# Install the requests_kerberos python module.
+RUN apk add --update --no-cache gcc libc-dev libffi-dev openssl-dev krb5-dev python3-dev
+RUN pip3 install requests_kerberos
+
 # Download the hbase-common.jar file.
 ARG HBASE_COMMON_JAR_VERSION
 RUN wget http://central.maven.org/maven2/org/apache/hbase/hbase-common/${HBASE_COMMON_JAR_VERSION}/hbase-common-${HBASE_COMMON_JAR_VERSION}.jar
