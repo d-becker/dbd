@@ -27,8 +27,10 @@ COPY scripts ./scripts
 COPY oozie-site_additional.xml .
 
 # Install the requests_kerberos python module.
-RUN apk add --update --no-cache gcc libc-dev libffi-dev openssl-dev krb5-dev python3-dev
-RUN pip3 install requests_kerberos
+RUN requests_kerberos_dependencies="gcc libc-dev libffi-dev openssl-dev krb5-dev python3-dev" && \
+    sudo apk add --update --no-cache $requests_kerberos_dependencies && \
+    sudo pip3 install requests_kerberos && \
+    sudo apk del $requests_kerberos_dependencies
 
 # Download the hbase-common.jar file.
 ARG HBASE_COMMON_JAR_VERSION
