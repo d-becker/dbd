@@ -27,6 +27,6 @@ KERBEROS_SERVICE_CONFIG: str = """
 services:
     krb5:
         image: flokkr/krb5
-        ports:
-          - 8081:8081
+#        ports:
+#          - 8081:8081
 """

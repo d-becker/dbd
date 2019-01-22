@@ -3,7 +3,7 @@ services:
       image: ${OOZIE_IMAGE}
       command: ["/bin/bash", "scripts/setup-oozie.sh"]
       hostname: oozieserver
-      ports:
+#      ports:
 #        - 11000:11000 # Oozie webui
       env_file:
         - ./compose-config

@@ -3,7 +3,7 @@ services:
       image: ${HADOOP_IMAGE}
       hostname: namenode
       command: ["/bin/bash", "-c", "\"/opt/hadoop/resolve_HOSTs.py --hadoop && hdfs namenode -format && hdfs namenode\""]
-      ports:
+#      ports:
 #         - 50070:50070 # Namenode webui
       env_file:
         - ./compose-config
@@ -20,7 +20,7 @@ services:
       image: ${HADOOP_IMAGE}
       hostname: resourcemanager
       command: ["/bin/bash", "-c", "\"/opt/hadoop/resolve_HOSTs.py --hadoop && yarn resourcemanager\""]
-      ports:
+#      ports:
 #         - 8088:8088 # Yarn webui
       env_file:
         - ./compose-config

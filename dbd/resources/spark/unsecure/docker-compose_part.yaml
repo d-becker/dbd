@@ -3,7 +3,7 @@ services:
       image: ${SPARK_IMAGE}
       hostname: sparkhistory
       command: ["./init.sh"]
-      ports:
+#      ports:
 #        - 18080:18080 # Spark History Server webui
       env_file:
         - ./compose-config
