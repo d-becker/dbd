@@ -4,7 +4,7 @@ services:
       hostname: sparkhistory
       command: ["./init.sh"]
       ports:
-        - 18080:18080 # Spark History Server webui
+#        - 18080:18080 # Spark History Server webui
       env_file:
         - ./compose-config
       environment:

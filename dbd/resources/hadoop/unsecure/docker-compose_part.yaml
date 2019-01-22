@@ -4,7 +4,7 @@ services:
       hostname: namenode
       command: ["hdfs","namenode"]
       ports:
-         - 50070:50070 # Namenode webui
+#         - 50070:50070 # Namenode webui
       env_file:
         - ./compose-config
       environment:
@@ -20,7 +20,7 @@ services:
       hostname: resourcemanager
       command: ["yarn", "resourcemanager"]
       ports:
-         - 8088:8088 # Yarn webui
+#         - 8088:8088 # Yarn webui
       env_file:
         - ./compose-config
    nodemanager:
