@@ -33,11 +33,12 @@ def _generate_compose_config_file_text(sorted_components: List[str], configurati
 
     return text.getvalue()
 
-def _generate_config_report(configuration: Configuration) -> str:
+def _generate_config_report(configuration: Configuration, build_failed: bool) -> str:
     text = io.StringIO()
 
     text.write("name: {}\n".format(configuration.name))
     text.write("timestamp: {}\n".format(configuration.timestamp))
+    text.write("build_successful: {}\n".format(not build_failed))
     text.write("component-order: {}\n".format(configuration.get_component_order()))
     text.write("components:\n")
 
@@ -113,7 +114,7 @@ def generate_output(input_config: Dict[str, Any],
     out.mkdir()
 
     with (out / "output_configuration.yaml").open("w") as file:
-        config_report = _generate_config_report(configuration)
+        config_report = _generate_config_report(configuration, build_failed)
         file.write(config_report)
 
     if build_failed:
