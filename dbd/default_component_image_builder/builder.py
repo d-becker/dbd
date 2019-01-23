@@ -13,7 +13,7 @@ from pathlib import Path
 
 import re
 
-from typing import Any, Dict, Iterable, List, Tuple
+from typing import Any, Dict, Iterable, List, Optional, Tuple
 
 import docker
 
@@ -23,7 +23,7 @@ from dbd.component_config import ComponentConfig, DistType, DistInfo
 from dbd.default_component_image_builder.assembly import Assembly
 from dbd.default_component_image_builder.cache import Cache
 from dbd.default_component_image_builder.pipeline.builder import PipelineBuilder
-from dbd.default_component_image_builder.pipeline.executor import DefaultPipelineExecutor
+from dbd.default_component_image_builder.pipeline.executor import DefaultPipelineExecutor, PipelineExecutor
 
 class DefaultComponentImageBuilder(ComponentImageBuilder):
     """
@@ -51,7 +51,8 @@ class DefaultComponentImageBuilder(ComponentImageBuilder):
                  component_name: str,
                  assembly: Assembly,
                  cache: Cache,
-                 pipeline_builder: PipelineBuilder) -> None:
+                 pipeline_builder: PipelineBuilder,
+                 pipeline_executor: Optional[PipelineExecutor] = None) -> None:
         """
         Creates a new `DefaultComponentImageBuilder` object.
 
@@ -60,6 +61,7 @@ class DefaultComponentImageBuilder(ComponentImageBuilder):
             assembly: An object holding component-specific information.
             cache: The object from which cache locations can be queried.
             pipeline_builder: The pipeline builder to be used to generate the build stages.
+            pipeline_executor: The pipeline executor to be used to execute the build stages. 
 
         """
 
@@ -67,6 +69,9 @@ class DefaultComponentImageBuilder(ComponentImageBuilder):
         self._assembly = assembly
         self._cache = cache
         self._pipeline_builder = pipeline_builder
+        self._pipeline_executor: PipelineExecutor = (pipeline_executor
+                                                     if pipeline_executor
+                                                     else DefaultPipelineExecutor())
 
         self._docker_client = docker.from_env()
 
@@ -94,23 +99,22 @@ class DefaultComponentImageBuilder(ComponentImageBuilder):
                                                          image_name,
                                                          dist_info,
                                                          docker_context)
-        pipeline_executor = DefaultPipelineExecutor()
 
         reused_docker_image: bool
         if force_rebuild:
             reused_docker_image = False
-            pipeline_executor.execute_all(self.name(),
-                                          dist_type,
-                                          id_string,
-                                          self._cache,
-                                          pipeline)
+            self._pipeline_executor.execute_all(self.name(),
+                                                dist_type,
+                                                id_string,
+                                                self._cache,
+                                                pipeline)
         else:
-            reused_docker_image = pipeline.final_stage.postcondition_satisfied
-            pipeline_executor.execute_needed(self.name(),
-                                             dist_type,
-                                             id_string,
-                                             self._cache,
-                                             pipeline)
+            reused_docker_image = pipeline.final_stage.postcondition_satisfied()
+            self._pipeline_executor.execute_needed(self.name(),
+                                                   dist_type,
+                                                   id_string,
+                                                   self._cache,
+                                                   pipeline)
 
         version: str
         if dist_type == DistType.RELEASE:
@@ -129,7 +133,7 @@ class DefaultComponentImageBuilder(ComponentImageBuilder):
                                                    self.name(),
                                                    self._assembly.version_command,
                                                    self._assembly.version_regex)
-        # TODO: Test correct `reuse_docker_image`.
+
         return ComponentConfig(dist_type, version, image_name, reused_docker_image)
 
     def _get_image_name(self,

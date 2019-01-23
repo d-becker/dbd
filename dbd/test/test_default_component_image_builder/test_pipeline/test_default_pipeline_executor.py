@@ -2,7 +2,7 @@
 
 # pylint: disable=missing-docstring
 
-from typing import cast
+from typing import cast, List
 from pathlib import Path
 
 from dbd.component_config import DistType
@@ -38,7 +38,7 @@ class StageTest(Stage):
         self.called = True
 
 class FinalStageTest(FinalStage):
-    def __init__(self, postcondition_satisfied) -> None:
+    def __init__(self, postcondition_satisfied: bool) -> None:
         self.called = False
         self._postcondition_satisfied = postcondition_satisfied
 
@@ -70,7 +70,7 @@ class TestDefaultPipelineExecutor(TmpDirTestCase):
         path.touch()
 
     def _get_pipeline(self, final_stage_postcondition_satisfied: bool) -> Pipeline:
-        inner_stages = list(map(StageTest, self.inner_stage_names))
+        inner_stages: List[Stage] = list(map(StageTest, self.inner_stage_names))
 
         return Pipeline(
             EntryStageTest(),
