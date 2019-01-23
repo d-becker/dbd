@@ -79,6 +79,18 @@ class FinalStage(metaclass=ABCMeta):
         """
         pass
 
+    @abstractmethod
+    def postcondition_satisfied(self) -> bool:
+        """
+        Checks whether the postcondition of the stage is satisfied.
+        For other kinds of stages, this can be done by checking if the
+        output file exists, but `FinalStage`s do not have output files.
+
+        Returns:
+            `True` if the postcondition is satisfied; `False` otherwise.
+        """
+        pass
+
 class Pipeline:
     """
     A class representing a pipeline of stages. It is composed of an `EntryStage`, a list of `Stage`s and a `FinalStage`.

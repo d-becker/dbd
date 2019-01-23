@@ -38,14 +38,18 @@ class StageTest(Stage):
         self.called = True
 
 class FinalStageTest(FinalStage):
-    def __init__(self) -> None:
+    def __init__(self, postcondition_satisfied) -> None:
         self.called = False
+        self._postcondition_satisfied = postcondition_satisfied
 
     def name(self) -> str:
         return "test_final_stage"
 
     def execute(self, input_path: Path) -> None:
         self.called = True
+
+    def postcondition_satisfied(self) -> bool:
+        return self._postcondition_satisfied
 
 class TestDefaultPipelineExecutor(TmpDirTestCase):
     def setUp(self) -> None:
@@ -55,42 +59,75 @@ class TestDefaultPipelineExecutor(TmpDirTestCase):
         self.dist_type = DistType.SNAPSHOT
         self.id_string = "id_string"
         self.cache = Cache(self._tmp_dir_path)
-        self.pipeline = Pipeline(
-            EntryStageTest(),
-            [StageTest("stage1"), StageTest("test2"), StageTest("test3")],
-            FinalStageTest())
+        self.inner_stage_names = ["stage1", "stage2", "stage3"]
 
         path = self.cache.get_path(self.component_name,
-                                   self.pipeline.inner_stages[1].name(),
+                                   self.inner_stage_names[1],
                                    self.dist_type,
                                    self.id_string)
 
         path.parent.mkdir(parents=True, exist_ok=True)
         path.touch()
 
+    def _get_pipeline(self, final_stage_postcondition_satisfied: bool) -> Pipeline:
+        inner_stages = list(map(StageTest, self.inner_stage_names))
+
+        return Pipeline(
+            EntryStageTest(),
+            inner_stages,
+            FinalStageTest(final_stage_postcondition_satisfied))
+
     def test_execute_all(self) -> None:
         executor = DefaultPipelineExecutor()
-        executor.execute_all(self.component_name, self.dist_type, self.id_string, self.cache, self.pipeline)
+        pipeline = self._get_pipeline(False)
+        executor.execute_all(self.component_name,
+                             self.dist_type,
+                             self.id_string,
+                             self.cache,
+                             pipeline)
 
-        self.assertTrue(cast(EntryStageTest, self.pipeline.entry_stage).called)
+        self.assertTrue(cast(EntryStageTest, pipeline.entry_stage).called)
 
         self.assertTrue(
             all(
                 map(lambda stage: cast(StageTest, stage).called,
-                    self.pipeline.inner_stages)))
+                    pipeline.inner_stages)))
 
-        self.assertTrue(cast(FinalStageTest, self.pipeline.final_stage).called)
+        self.assertTrue(cast(FinalStageTest, pipeline.final_stage).called)
 
     def test_execute_needed(self) -> None:
         executor = DefaultPipelineExecutor()
-        executor.execute_needed(self.component_name, self.dist_type, self.id_string, self.cache, self.pipeline)
+        pipeline = self._get_pipeline(False)
+        executor.execute_needed(self.component_name,
+                                self.dist_type,
+                                self.id_string,
+                                self.cache,
+                                pipeline)
 
-        self.assertFalse(cast(EntryStageTest, self.pipeline.entry_stage).called)
+        self.assertFalse(cast(EntryStageTest, pipeline.entry_stage).called)
 
         self.assertFalse(
             any(
                 map(lambda stage: cast(StageTest, stage).called,
-                    self.pipeline.inner_stages[:2])))
+                    pipeline.inner_stages[:2])))
 
-        self.assertTrue(cast(StageTest, self.pipeline.inner_stages[2]).called)
-        self.assertTrue(cast(FinalStageTest, self.pipeline.final_stage).called)
+        self.assertTrue(cast(StageTest, pipeline.inner_stages[2]).called)
+        self.assertTrue(cast(FinalStageTest, pipeline.final_stage).called)
+
+    def test_execute_needed_final_stage_postcondition_satisfied(self) -> None:
+        executor = DefaultPipelineExecutor()
+        pipeline = self._get_pipeline(True)
+        executor.execute_needed(self.component_name,
+                                self.dist_type,
+                                self.id_string,
+                                self.cache,
+                                pipeline)
+
+        self.assertFalse(cast(EntryStageTest, pipeline.entry_stage).called)
+
+        self.assertFalse(
+            any(
+                map(lambda stage: cast(StageTest, stage).called,
+                    pipeline.inner_stages)))
+
+        self.assertFalse(cast(FinalStageTest, pipeline.final_stage).called)

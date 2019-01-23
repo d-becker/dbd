@@ -173,6 +173,21 @@ class BuildDockerImageStage(FinalStage):
                                              tag=self._image_name,
                                              rm=True)
 
+    def postcondition_satisfied(self) -> bool:
+        """
+        Returns whether there exists a local docker image with the name given in the constructor.
+
+        Returns:
+            `True` if the docker image with the given name exists; `False` otherwise.
+        """
+
+        try:
+            self._docker_client.images.get(self._image_name)
+        except docker.errors.ImageNotFound:
+            return False
+        else:
+            return True
+
     def get_build_args(self) -> Dict[str, str]:
         """
         Returns a dictionary with the build arguments in the Dockerfile that will be passed to Docker.

@@ -104,6 +104,9 @@ class DefaultPipelineExecutor(PipelineExecutor):
                        id_string: str,
                        cache: Cache,
                        pipeline: Pipeline) -> None:
+        if pipeline.final_stage.postcondition_satisfied():
+            return
+
         first_needed_stage_index_and_input_path = self._get_first_needed_stage_index_and_input_path(
             component_name,
             dist_type,
