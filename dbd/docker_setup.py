@@ -121,8 +121,7 @@ def check_docker_daemon_running() -> None:
     Ensures that the docker daemon is running, starting it if it is not.
 
     Raises:
-        DockerSetupError: Raised if this function is called on an unsupported
-            operating system. Only Linux and MacOS are supported.
+        DockerSetupError: Raised if the `docker` command is missing or if starting docker fails.
 
     """
 
@@ -135,7 +134,8 @@ def check_docker_daemon_running() -> None:
         logging.info("Docker daemon is running.")
     else:
         msg = ("Docker daemon is not running or you do not have the necessary privileges to connect to it. "
-               + "Please start it to be able to use dbd.")
+               + "Trying to start it.")
 
         logging.error(msg)
-        raise DockerSetupError(msg)
+
+        start_docker_daemon()
