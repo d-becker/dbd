@@ -61,7 +61,7 @@ class DefaultComponentImageBuilder(ComponentImageBuilder):
             assembly: An object holding component-specific information.
             cache: The object from which cache locations can be queried.
             pipeline_builder: The pipeline builder to be used to generate the build stages.
-            pipeline_executor: The pipeline executor to be used to execute the build stages. 
+            pipeline_executor: The pipeline executor to be used to execute the build stages.
 
         """
 
@@ -116,23 +116,7 @@ class DefaultComponentImageBuilder(ComponentImageBuilder):
                                                    self._cache,
                                                    pipeline)
 
-        version: str
-        if dist_type == DistType.RELEASE:
-            version = argument
-        else:
-            if self._assembly.version_command is None:
-                raise ValueError(
-                    "The `version_command` key is missing from the assembly but needed to find out the version number.")
-
-            if self._assembly.version_regex is None:
-                raise ValueError(
-                    "The `version_regex` key is missing from the assembly but needed to find out the version number.")
-
-            version = _find_out_version_from_image(self._docker_client,
-                                                   image_name,
-                                                   self.name(),
-                                                   self._assembly.version_command,
-                                                   self._assembly.version_regex)
+        version = self._get_version(dist_type, argument, image_name)
 
         return ComponentConfig(dist_type, version, image_name, reused_docker_image)
 
@@ -157,6 +141,26 @@ class DefaultComponentImageBuilder(ComponentImageBuilder):
                                component_tag=id_string,
                                dependencies_tag=dependencies_tag,
                                kerberos_tag=kerberos_tag)
+
+    def _get_version(self, dist_type: DistType, argument: str, image_name: str) -> str:
+        if dist_type == DistType.RELEASE:
+            return argument
+
+        if self._assembly.version_command is None:
+            raise ValueError(
+                "The `version_command` key is missing from the assembly but needed to find out the version number.")
+
+        if self._assembly.version_regex is None:
+            raise ValueError(
+                "The `version_regex` key is missing from the assembly but needed to find out the version number.")
+
+        version = _find_out_version_from_image(self._docker_client,
+                                               image_name,
+                                               self.name(),
+                                               self._assembly.version_command,
+                                               self._assembly.version_regex)
+
+        return version
 
 
 def _dist_type_and_arg(component_config: Dict[str, str]) -> Tuple[DistType, str]:
