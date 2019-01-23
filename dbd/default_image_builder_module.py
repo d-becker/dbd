@@ -11,6 +11,7 @@ from dbd.default_component_image_builder.builder import DefaultComponentImageBui
 from dbd.default_component_image_builder.assembly import Assembly
 from dbd.default_component_image_builder.cache import Cache
 from dbd.default_component_image_builder.pipeline.builder import DefaultPipelineBuilder
+from dbd.default_component_image_builder.pipeline.executor import DefaultPipelineExecutor
 
 def get_image_builder(component_name: str,
                       assembly: Dict[str, Any],
@@ -26,8 +27,10 @@ def get_image_builder(component_name: str,
 
     assembly_object = Assembly.from_dict(assembly)
     pipeline_builder = DefaultPipelineBuilder()
+    pipeline_executor = DefaultPipelineExecutor()
 
     return DefaultComponentImageBuilder(component_name,
                                         assembly_object,
                                         cache,
-                                        pipeline_builder)
+                                        pipeline_builder,
+                                        pipeline_executor)

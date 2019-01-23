@@ -14,7 +14,7 @@ from dbd.default_component_image_builder.builder import DefaultComponentImageBui
 from dbd.default_component_image_builder.cache import Cache
 from dbd.default_component_image_builder.pipeline import EntryStage, FinalStage, Pipeline
 from dbd.default_component_image_builder.pipeline.builder import PipelineBuilder
-from dbd.default_component_image_builder.pipeline.executor import PipelineExecutor
+from dbd.default_component_image_builder.pipeline.executor import DefaultPipelineExecutor, PipelineExecutor
 
 class DummyEntryStage(EntryStage):
     def name(self) -> str:
@@ -83,7 +83,9 @@ class TestDefaultComponentImageBuilder(unittest.TestCase):
         assembly = Assembly.from_dict({"dependencies": dependency_list})
         cache = Cache(Path())
         pipeline_builder = MockPipelineBuilder(final_stage_postcondition_satisfied)
-        return DefaultComponentImageBuilder(name, assembly, cache, pipeline_builder, pipeline_executor)
+
+        pipeline_executor_ = pipeline_executor if pipeline_executor else DefaultPipelineExecutor()
+        return DefaultComponentImageBuilder(name, assembly, cache, pipeline_builder, pipeline_executor_)
 
     @staticmethod
     def _default_builder() -> DefaultComponentImageBuilder:

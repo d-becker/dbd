@@ -13,7 +13,7 @@ from pathlib import Path
 
 import re
 
-from typing import Any, Dict, Iterable, List, Optional, Tuple
+from typing import Any, Dict, Iterable, List, Tuple
 
 import docker
 
@@ -23,7 +23,7 @@ from dbd.component_config import ComponentConfig, DistType, DistInfo
 from dbd.default_component_image_builder.assembly import Assembly
 from dbd.default_component_image_builder.cache import Cache
 from dbd.default_component_image_builder.pipeline.builder import PipelineBuilder
-from dbd.default_component_image_builder.pipeline.executor import DefaultPipelineExecutor, PipelineExecutor
+from dbd.default_component_image_builder.pipeline.executor import PipelineExecutor
 
 class DefaultComponentImageBuilder(ComponentImageBuilder):
     """
@@ -43,6 +43,8 @@ class DefaultComponentImageBuilder(ComponentImageBuilder):
     generate a pipeline for that particular configuration - the pipeline is not fixed for a component, it may for
     example depend on whether the component distribution is a release or a snapshot build.
 
+    Another customisation possibility is using a custom pipeline executor.
+
     For more information about how pipelines work, see the `pipeline` package's documentation.
 
     """
@@ -52,7 +54,7 @@ class DefaultComponentImageBuilder(ComponentImageBuilder):
                  assembly: Assembly,
                  cache: Cache,
                  pipeline_builder: PipelineBuilder,
-                 pipeline_executor: Optional[PipelineExecutor] = None) -> None:
+                 pipeline_executor: PipelineExecutor) -> None:
         """
         Creates a new `DefaultComponentImageBuilder` object.
 
@@ -69,9 +71,7 @@ class DefaultComponentImageBuilder(ComponentImageBuilder):
         self._assembly = assembly
         self._cache = cache
         self._pipeline_builder = pipeline_builder
-        self._pipeline_executor: PipelineExecutor = (pipeline_executor
-                                                     if pipeline_executor
-                                                     else DefaultPipelineExecutor())
+        self._pipeline_executor = pipeline_executor
 
         self._docker_client = docker.from_env()
 

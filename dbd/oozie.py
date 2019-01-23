@@ -29,6 +29,7 @@ from dbd.default_component_image_builder.builder import DefaultComponentImageBui
 from dbd.default_component_image_builder.cache import Cache
 from dbd.default_component_image_builder.pipeline import Pipeline, Stage
 from dbd.default_component_image_builder.pipeline.builder import DefaultPipelineBuilder, PipelineBuilder
+from dbd.default_component_image_builder.pipeline.executor import DefaultPipelineExecutor
 
 class ShellCommandExecutor(metaclass=ABCMeta):
     """
@@ -178,8 +179,10 @@ def get_image_builder(assembly: Dict[str, Any], cache: Cache) -> ComponentImageB
 
     assembly_object = Assembly.from_dict(assembly)
     pipeline_builder = OoziePipelineBuilder()
+    pipeline_executor = DefaultPipelineExecutor()
 
     return DefaultComponentImageBuilder("oozie",
                                         assembly_object,
                                         cache,
-                                        pipeline_builder)
+                                        pipeline_builder,
+                                        pipeline_executor)
