@@ -17,7 +17,19 @@ import dbd.defaults
 
 import dbd.output.docker_compose_generator
 
-def _generate_compose_config_file_text(sorted_components: List[str], configuration: Configuration) -> str:
+def generate_compose_config_file_text(sorted_components: List[str], configuration: Configuration) -> str:
+    """
+    Generates the contents of the compose-config file.
+
+    Args:
+        sorted_components: The names of the components in the order they were built.
+        configuration: The `Configuration` object that contains the information about the configuration of the build.
+
+    Returns:
+        The contents of the compose-config file.
+
+    """
+
     text = io.StringIO()
     for component in sorted_components:
         file_path = configuration.get_compose_config_part(component)
@@ -33,7 +45,19 @@ def _generate_compose_config_file_text(sorted_components: List[str], configurati
 
     return text.getvalue()
 
-def _generate_config_report(configuration: Configuration, build_failed: bool) -> str:
+def generate_config_report(configuration: Configuration, build_failed: bool) -> str:
+    """
+    Generates the contents of the output_configuration.yaml file.
+
+    Args:
+        configuration: The `Configuration` object that contains the information about the configuration of the build.
+        build_failed: Whether the build failed.
+
+    Returns:
+        The contents of the output_configuration.yaml file.
+
+    """
+
     text = io.StringIO()
 
     text.write("name: {}\n".format(configuration.name))
@@ -55,7 +79,18 @@ def _generate_config_report(configuration: Configuration, build_failed: bool) ->
 
     return text.getvalue()
 
-def _generate_env_file_text(configuration: Configuration) -> str:
+def generate_env_file_text(configuration: Configuration) -> str:
+    """
+    Generates the contents of the ".env" file.
+
+    Args:
+        configuration: The `Configuration` object that contains the information about the configuration of the build.
+
+    Returns:
+        The contents of the ".env" file.
+
+    """
+
     text = io.StringIO()
 
     for component, config in configuration.components.items():
@@ -66,7 +101,19 @@ def _generate_env_file_text(configuration: Configuration) -> str:
 
     return text.getvalue()
 
-def _generate_docker_compose_file_text(input_component_config: Dict[str, Any], configuration: Configuration) -> str:
+def generate_docker_compose_file_text(input_component_config: Dict[str, Any], configuration: Configuration) -> str:
+    """
+    Generates the contents of the docker-compose file.
+
+    Args:
+        input_component_config: The "components" section of the `BuildConfiguration` dictionary.
+        configuration: The `Configuration` object that contains the information about the configuration of the build.
+
+    Returns:
+        The contents of the docker-compose file as a string.
+
+    """
+
     docker_compose_parts = {}
     for component in input_component_config:
         file_path = configuration.get_docker_compose_part(component)
@@ -75,11 +122,9 @@ def _generate_docker_compose_file_text(input_component_config: Dict[str, Any], c
             docker_compose_parts[component] = docker_compose_part
 
     if configuration.kerberos:
-        # TODO: Test this.
         krb5 = dbd.defaults.KERBEROS_SERVICE_CONFIG
         docker_compose_parts["krb5"] = yaml.load(krb5)
 
-    # TODO: Test whether customised services work.
     customised_services = {component : value.get("services", {})
                            for component, value in input_component_config.items()}
 
@@ -96,7 +141,7 @@ def generate_output(input_config: Dict[str, Any],
 
     Args:
         input_conf: The dictionary that contains the contents of the `BuildConfiguration` file, provided by the user.
-        configuration: The `Configuration` object that contains the information about the configuration build.
+        configuration: The `Configuration` object that contains the information about the configuration of the build.
         output_location: The directory in which the output should be generated.
         build_failed: If this parameter is `True`, only the 'output_configuration.yaml' file will be generated.
 
@@ -114,21 +159,21 @@ def generate_output(input_config: Dict[str, Any],
     out.mkdir()
 
     with (out / "output_configuration.yaml").open("w") as file:
-        config_report = _generate_config_report(configuration, build_failed)
+        config_report = generate_config_report(configuration, build_failed)
         file.write(config_report)
 
     if build_failed:
         return
 
     with (out / ".env").open("w") as file:
-        env_file_text = _generate_env_file_text(configuration)
+        env_file_text = generate_env_file_text(configuration)
         file.write(env_file_text)
 
-    docker_compose_file_text = _generate_docker_compose_file_text(input_config["components"],
-                                                                  configuration)
+    docker_compose_file_text = generate_docker_compose_file_text(input_config["components"],
+                                                                 configuration)
     with (out / "docker-compose.yaml").open("w") as docker_compose_file:
         docker_compose_file.write(docker_compose_file_text)
 
-    compose_config_file_text = _generate_compose_config_file_text(components, configuration)
+    compose_config_file_text = generate_compose_config_file_text(components, configuration)
     with (out / "compose-config").open("w") as compose_config_file:
         compose_config_file.write(compose_config_file_text)
